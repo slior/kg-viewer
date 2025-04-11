@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph Visualizer</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Process polyfill for browser compatibility -->
+    <script>
+        // Add process polyfill for libraries that expect Node.js environment
+        if (typeof window !== 'undefined' && !window.process) {
+            window.process = { env: {} };
+        }
+    </script>
+</head>
+<body>
+    <div id="graph-container"></div>
+
+    <div id="ui-panel">
+        <div id="info-panel">
+            <h2>Selected Item Details</h2>
+            <div id="info-content">Select a node or edge to see details.</div>
+        </div>
+        <div id="legend-panel">
+            <h2>Legend</h2>
+            <div id="legend-content"></div>
+        </div>
+        <div id="stats-panel">
+            <h2>Graph Stats</h2>
+            <div id="stats-content"></div>
+            <button id="reload-button">Reload Graph</button>
+        </div>
+    </div>
+
+    <!-- First load Three.js globally -->
+    <script src="https://cdn.jsdelivr.net/npm/three/build/three.min.js"></script>
+    
+    <!-- Then load 3d-force-graph -->
+    <script src="https://unpkg.com/3d-force-graph@1.77.0/dist/3d-force-graph.min.js"></script>
+    
+    <!-- Import map for ES Modules - let them use the global Three.js instance -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
+            "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three/examples/jsm/controls/OrbitControls.js"
+        }
+    }
+    </script>
+    
+    <!-- Load our application module directly -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

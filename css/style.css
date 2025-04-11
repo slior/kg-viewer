@@ -1,0 +1,72 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    overflow: hidden; /* Prevent body scrollbars */
+}
+
+#graph-container {
+    flex-grow: 1; /* Takes up available vertical space */
+    position: relative; /* Needed for potential overlays or absolute positioning inside */
+    overflow: hidden; /* Prevent scrollbars if canvas slightly overflows */
+    background-color: #111; /* Dark background for contrast */
+}
+
+#graph-container canvas {
+    display: block; /* Remove extra space below canvas */
+}
+
+#ui-panel {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-top: 1px solid #ccc;
+    flex-shrink: 0; /* Prevent shrinking */
+    max-height: 200px; /* Limit height of the bottom panel */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+#info-panel, #legend-panel, #stats-panel {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin: 0 5px;
+    flex: 1; /* Distribute space */
+    min-width: 150px; /* Prevent collapsing too much */
+    overflow-y: auto; /* Allow internal scrolling */
+    max-height: 180px; /* Consistent with parent max-height */
+}
+
+#info-panel h2, #legend-panel h2, #stats-panel h2 {
+    margin-top: 0;
+    font-size: 1em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+#info-content, #legend-content, #stats-content {
+    font-size: 0.9em;
+}
+
+#stats-panel button {
+    margin-top: 10px;
+    padding: 5px 10px;
+}
+
+/* Style for legend items (will be added by JS) */
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.legend-color-box {
+    width: 15px;
+    height: 15px;
+    margin-right: 8px;
+    border: 1px solid #555;
+    display: inline-block; /* Needed for size */
+}
