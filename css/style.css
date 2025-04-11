@@ -56,17 +56,96 @@ body {
     padding: 5px 10px;
 }
 
-/* Style for legend items (will be added by JS) */
+/* Style for legend items */
 .legend-item {
     display: flex;
     align-items: center;
     margin-bottom: 4px;
+    gap: 8px;
 }
 
 .legend-color-box {
     width: 15px;
     height: 15px;
-    margin-right: 8px;
     border: 1px solid #555;
-    display: inline-block; /* Needed for size */
+    display: inline-block;
+}
+
+.legend-label {
+    flex-grow: 1;
+}
+
+/* Style for checkboxes in legend */
+.legend-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Style for select all button */
+.legend-select-all {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.legend-select-all button {
+    width: 100%;
+    padding: 5px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.legend-select-all button:hover {
+    background-color: #e9ecef;
+}
+
+/* Loading overlay styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-message {
+    color: white;
+    margin-top: 20px;
+    font-size: 1.2em;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error toast styles */
+.error-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #dc3545;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none;
 }

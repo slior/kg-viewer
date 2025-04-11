@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Node Filtering Tests</title>
+    <link rel="stylesheet" href="test-styles.css">
+</head>
+<body>
+    <h1>Node Filtering Tests</h1>
+    
+    <div id="nav-menu"></div>
+    <div id="test-results" class="test-results"></div>
+    <div id="test-summary" class="test-summary"></div>
+
+    <!-- Load test files -->
+    <script type="module">
+        // Import the modules we want to test
+        import { filterManager } from '../js/filterManager.js';
+        import { config } from '../js/config.js';
+        import { 
+            displayTestResult, 
+            displayTestSummary, 
+            createNavMenu, 
+            resetTestStats
+        } from './test-utils.js';
+
+        // Setup navigation
+        document.getElementById('nav-menu').appendChild(createNavMenu());
+
+        // Mock localStorage
+        const mockLocalStorage = {
+            storage: {},
+            getItem: function(key) {
+                return this.storage[key] || null;
+            },
+            setItem: function(key, value) {
+                this.storage[key] = value;
+                this.setItemCalls = this.setItemCalls || [];
+                this.setItemCalls.push([key, value]);
+            },
+            clear: function() {
+                this.storage = {};
+                this.setItemCalls = [];
+            }
+        };
+        
+        // Replace the real localStorage with our mock
+        Object.defineProperty(window, 'localStorage', {
+            value: mockLocalStorage,
+            writable: true
+        });
+
+        // Sample test data
+        const testData = {
+            nodes: [
+                { id: "node1", name: "Node 1", type: "service", description: "Test service", insights: [] },
+                { id: "node2", name: "Node 2", type: "service", description: "Another service", insights: [] },
+                { id: "node3", name: "Node 3", type: "identity", description: "Test identity", insights: [] },
+                { id: "node4", name: "Node 4", type: "identity", description: "Another identity", insights: [] },
+                { id: "node5", name: "Node 5", type: "default", description: "Default node", insights: [] }
+            ],
+            links: [
+                { source: "node1", target: "node3", label: "uses" },
+                { source: "node2", target: "node4", label: "uses" },
+                { source: "node3", target: "node5", label: "connects to" }
+            ]
+        };
+
+        // Run tests
+        async function runTests() {
+            resetTestStats();
+
+            // Test 1: Initialize filter state
+            try {
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                
+                // Initialize with test data
+                filterManager.initFromGraphData(testData);
+                
+                // Check if all node types are visible by default
+                const allTypesVisible = ['service', 'identity', 'default'].every(type => 
+                    filterManager.isTypeVisible(type)
+                );
+                
+                displayTestResult(
+                    "Test 1: Initialize filter state", 
+                    allTypesVisible, 
+                    allTypesVisible ? 
+                        "Successfully initialized filter state with all types visible" : 
+                        "Failed to initialize filter state with all types visible"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 1: Initialize filter state", 
+                    false, 
+                    `Error initializing filter state: ${error.message}`
+                );
+            }
+
+            // Test 2: Toggle node type visibility
+            try {
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                filterManager.initFromGraphData(testData);
+                
+                // Toggle visibility for 'service' type
+                filterManager.toggleTypeVisibility('service');
+                
+                // Check if 'service' type is now hidden
+                const serviceHidden = !filterManager.isTypeVisible('service');
+                const otherTypesVisible = ['identity', 'default'].every(type => 
+                    filterManager.isTypeVisible(type)
+                );
+                
+                displayTestResult(
+                    "Test 2: Toggle node type visibility", 
+                    serviceHidden && otherTypesVisible, 
+                    serviceHidden && otherTypesVisible ? 
+                        "Successfully toggled visibility for 'service' type" : 
+                        "Failed to toggle visibility for 'service' type"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 2: Toggle node type visibility", 
+                    false, 
+                    `Error toggling node type visibility: ${error.message}`
+                );
+            }
+
+            // Test 3: Set all types visibility
+            try {
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                filterManager.initFromGraphData(testData);
+                
+                // Set all types to hidden
+                filterManager.setAllVisibility(false);
+                
+                // Check if all types are hidden
+                const allTypesHidden = ['service', 'identity', 'default'].every(type => 
+                    !filterManager.isTypeVisible(type)
+                );
+                
+                displayTestResult(
+                    "Test 3: Set all types visibility", 
+                    allTypesHidden, 
+                    allTypesHidden ? 
+                        "Successfully set all types to hidden" : 
+                        "Failed to set all types to hidden"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 3: Set all types visibility", 
+                    false, 
+                    `Error setting all types visibility: ${error.message}`
+                );
+            }
+
+            // Test 4: Persist filter state
+            try {
+                // Reset filter manager and localStorage
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                mockLocalStorage.clear();
+                
+                // Initialize with test data
+                filterManager.initFromGraphData(testData);
+                
+                // Toggle visibility for 'service' type
+                filterManager.toggleTypeVisibility('service');
+                
+                // Persist state
+                filterManager.persistState();
+                
+                // Check if localStorage.setItem was called with the correct key
+                const setItemCalled = mockLocalStorage.setItemCalls && mockLocalStorage.setItemCalls.length > 0;
+                const correctKey = setItemCalled && 
+                    mockLocalStorage.setItemCalls[0][0] === config.filter.storageKey;
+                
+                displayTestResult(
+                    "Test 4: Persist filter state", 
+                    setItemCalled && correctKey, 
+                    setItemCalled && correctKey ? 
+                        "Successfully persisted filter state to localStorage" : 
+                        "Failed to persist filter state to localStorage"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 4: Persist filter state", 
+                    false, 
+                    `Error persisting filter state: ${error.message}`
+                );
+            }
+
+            // Test 5: Load persisted filter state
+            try {
+                // Reset filter manager and localStorage
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                mockLocalStorage.clear();
+                
+                // Set up mock localStorage data
+                mockLocalStorage.storage[config.filter.storageKey] = JSON.stringify({
+                    service: false,
+                    identity: true,
+                    default: true
+                });
+                
+                // Initialize with test data
+                filterManager.initFromGraphData(testData);
+                
+                // Load persisted state
+                filterManager.loadPersistedState();
+                
+                // Check if the state was loaded correctly
+                const serviceHidden = !filterManager.isTypeVisible('service');
+                const identityVisible = filterManager.isTypeVisible('identity');
+                const defaultVisible = filterManager.isTypeVisible('default');
+                
+                displayTestResult(
+                    "Test 5: Load persisted filter state", 
+                    serviceHidden && identityVisible && defaultVisible, 
+                    serviceHidden && identityVisible && defaultVisible ? 
+                        "Successfully loaded persisted filter state" : 
+                        "Failed to load persisted filter state"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 5: Load persisted filter state", 
+                    false, 
+                    `Error loading persisted filter state: ${error.message}`
+                );
+            }
+
+            // Test 6: Event listeners
+            try {
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                filterManager.initFromGraphData(testData);
+                
+                // Add a listener
+                let listenerCalled = false;
+                const listener = () => { listenerCalled = true; };
+                filterManager.addListener(listener);
+                
+                // Toggle visibility to trigger the listener
+                filterManager.toggleTypeVisibility('service');
+                
+                // Check if the listener was called
+                displayTestResult(
+                    "Test 6: Event listeners", 
+                    listenerCalled, 
+                    listenerCalled ? 
+                        "Successfully triggered event listener" : 
+                        "Failed to trigger event listener"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 6: Event listeners", 
+                    false, 
+                    `Error with event listeners: ${error.message}`
+                );
+            }
+
+            // Test 7: Node visibility in graph
+            try {
+                // Create a mock graph object
+                const mockGraph = {
+                    graphData: (data) => {
+                        // This would update the graph data in a real implementation
+                        return mockGraph;
+                    }
+                };
+                
+                // Create a mock applyFilterState function
+                const applyFilterState = (filterState) => {
+                    // Update node visibility based on filter state
+                    testData.nodes.forEach(node => {
+                        const type = node.type || 'default';
+                        node.visible = filterState[type] ?? config.filter.defaultVisible;
+                    });
+                    
+                    // Update link visibility based on connected nodes
+                    testData.links.forEach(link => {
+                        const sourceNode = testData.nodes.find(n => n.id === link.source);
+                        const targetNode = testData.nodes.find(n => n.id === link.target);
+                        link.visible = sourceNode.visible && targetNode.visible;
+                    });
+                    
+                    // Update the graph
+                    mockGraph.graphData(testData);
+                };
+                
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                filterManager.initFromGraphData(testData);
+                
+                // Add a listener to apply filter state
+                filterManager.addListener(applyFilterState);
+                
+                // Toggle visibility for 'service' type
+                filterManager.toggleTypeVisibility('service');
+                
+                // Check if nodes of 'service' type are hidden
+                const serviceNodesHidden = testData.nodes
+                    .filter(node => node.type === 'service')
+                    .every(node => !node.visible);
+                
+                // Check if other nodes are visible
+                const otherNodesVisible = testData.nodes
+                    .filter(node => node.type !== 'service')
+                    .every(node => node.visible);
+                
+                // Check if links connected to hidden nodes are hidden
+                const linksVisibilityCorrect = testData.links.every(link => {
+                    const sourceNode = testData.nodes.find(n => n.id === link.source);
+                    const targetNode = testData.nodes.find(n => n.id === link.target);
+                    return link.visible === (sourceNode.visible && targetNode.visible);
+                });
+                
+                displayTestResult(
+                    "Test 7: Node visibility in graph", 
+                    serviceNodesHidden && otherNodesVisible && linksVisibilityCorrect, 
+                    serviceNodesHidden && otherNodesVisible && linksVisibilityCorrect ? 
+                        "Successfully updated node and link visibility in graph" : 
+                        "Failed to update node and link visibility in graph"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 7: Node visibility in graph", 
+                    false, 
+                    `Error updating node visibility in graph: ${error.message}`
+                );
+            }
+
+            // Test 8: Performance with large graphs
+            try {
+                // Create a large graph (1000 nodes)
+                const largeGraph = {
+                    nodes: Array.from({ length: 1000 }, (_, i) => ({
+                        id: `node${i}`,
+                        name: `Node ${i}`,
+                        type: i % 5 === 0 ? 'service' : i % 3 === 0 ? 'identity' : 'default',
+                        description: `Test node ${i}`,
+                        insights: []
+                    })),
+                    links: Array.from({ length: 2000 }, (_, i) => ({
+                        source: `node${i % 1000}`,
+                        target: `node${(i + 100) % 1000}`,
+                        label: 'connects to'
+                    }))
+                };
+                
+                // Reset filter manager
+                filterManager.filterState.clear();
+                filterManager.listeners.clear();
+                
+                // Measure initialization time
+                const initStartTime = performance.now();
+                filterManager.initFromGraphData(largeGraph);
+                const initEndTime = performance.now();
+                const initTime = initEndTime - initStartTime;
+                
+                // Measure filter application time
+                const filterStartTime = performance.now();
+                filterManager.toggleTypeVisibility('service');
+                const filterEndTime = performance.now();
+                const filterTime = filterEndTime - filterStartTime;
+                
+                // Check if performance is acceptable (less than 100ms)
+                const performanceAcceptable = initTime < 100 && filterTime < 100;
+                
+                displayTestResult(
+                    "Test 8: Performance with large graphs", 
+                    performanceAcceptable, 
+                    performanceAcceptable ? 
+                        `Successfully handled large graph (init: ${initTime.toFixed(2)}ms, filter: ${filterTime.toFixed(2)}ms)` : 
+                        `Performance not acceptable (init: ${initTime.toFixed(2)}ms, filter: ${filterTime.toFixed(2)}ms)`
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 8: Performance with large graphs", 
+                    false, 
+                    `Error testing performance: ${error.message}`
+                );
+            }
+            
+            // Display test summary
+            displayTestSummary();
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html> 

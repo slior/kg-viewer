@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { config, getNodeColor } from './config.js';
 import { updateInfoPanel } from './uiManager.js'; // Import UI update function
+import { filterManager } from './filterManager.js';
 
 // Polyfill for process in browser
 if (typeof window !== 'undefined' && !window.process) {
@@ -88,6 +89,9 @@ export function initGraphVisualization() {
         // Set up event handlers
         graph.onNodeClick(handleNodeClick);
         graph.onLinkClick(handleLinkClick);
+
+        // Add filter state change listener
+        filterManager.addListener(handleFilterStateChange);
     } catch (error) {
         console.error("Error initializing 3D force graph:", error);
         return;
@@ -103,7 +107,7 @@ export function initGraphVisualization() {
 }
 
 // --- Data Loading and Rendering ---
-export async function loadDataAndRender(graphData) {
+export async function loadDataAndRender(data) {
     console.log("Loading graph data into visualization...");
     
     if (!graph || !graph.graphData) {
@@ -112,13 +116,20 @@ export async function loadDataAndRender(graphData) {
     }
 
     try {
-        // If graphData is not provided, use default behavior
-        if (!graphData) {
+        // If data is not provided, use default behavior
+        if (!data) {
             console.warn("No graph data provided to loadDataAndRender, this might cause issues");
+            return;
         }
+        
+        // Store the graph data locally
+        graphData = data;
         
         // Feed data to the force-graph
         graph.graphData(graphData);
+
+        // Apply initial filter state
+        applyFilterState(filterManager.getFilterState());
 
         // Setup initial camera position after graph data is loaded
         // Use timeout to allow layout to start settling
@@ -148,6 +159,41 @@ function handleLinkClick(link, event) {
     console.log("Link clicked:", link);
      // Display link info in the UI panel
      updateInfoPanel(link, 'link');
+}
+
+// --- Filter State Management ---
+function handleFilterStateChange(filterState) {
+    applyFilterState(filterState);
+}
+
+function applyFilterState(filterState) {
+    if (!graph || !graphData || !graphData.nodes) return;
+
+    // Update node visibility
+    graphData.nodes.forEach(node => {
+        const type = node.type || 'default';
+        const isVisible = filterState[type] ?? config.filter.defaultVisible;
+        if (node.__threeObj) {
+            node.__threeObj.visible = isVisible;
+        }
+    });
+
+    // Update link visibility based on connected nodes
+    if (graphData.links) {
+        graphData.links.forEach(link => {
+            const sourceType = link.source.type || 'default';
+            const targetType = link.target.type || 'default';
+            const isVisible = (filterState[sourceType] ?? config.filter.defaultVisible) && 
+                             (filterState[targetType] ?? config.filter.defaultVisible);
+            
+            if (link.__lineObj) link.__lineObj.visible = isVisible;
+            if (link.__arrowObj) link.__arrowObj.visible = isVisible;
+            if (link.__particlesObj) link.__particlesObj.visible = isVisible;
+        });
+    }
+
+    // Update the graph
+    graph.graphData(graphData);
 }
 
 // --- Animation Loop ---

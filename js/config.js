@@ -58,6 +58,12 @@ export const config = {
         apiEndpoint: '/data/sample.json', // Endpoint to fetch graph data
         fetchTimeout: 10000, // 10 seconds timeout for API requests
         retryCount: 3 // Number of retries for failed requests
+    },
+    // Filter configuration
+    filter: {
+        persistState: true, // Whether to persist filter state
+        storageKey: 'kg-viewer-filters', // localStorage key for filter state
+        defaultVisible: true // Default visibility state for node types
     }
 };
 

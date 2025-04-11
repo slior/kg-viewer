@@ -1,5 +1,6 @@
 // js/uiManager.js
 import { config, getNodeColor } from './config.js';
+import { filterManager } from './filterManager.js';
 
 // Get references to UI elements
 const infoContent = document.getElementById(config.ui.infoPanelId);
@@ -194,31 +195,113 @@ export function updateStats(graphData) {
 export function generateLegend(graphData) {
     if (!legendContent || !graphData || !graphData.nodes) return;
 
-    const nodeTypes = new Set(graphData.nodes.map(node => node.type || 'default'));
-    legendContent.innerHTML = ''; // Clear existing legend
+    // Initialize filter manager with current graph data
+    filterManager.initFromGraphData(graphData);
 
+    // Clear existing legend
+    legendContent.innerHTML = '';
+
+    // Add Select All button
+    const selectAllContainer = document.createElement('div');
+    selectAllContainer.className = 'legend-select-all';
+    const selectAllButton = document.createElement('button');
+    selectAllButton.textContent = 'Select All';
+    selectAllButton.addEventListener('click', () => {
+        const allVisible = Array.from(filterManager.filterState.values()).every(v => v);
+        filterManager.setAllVisibility(!allVisible);
+        selectAllButton.textContent = allVisible ? 'Select All' : 'Deselect All';
+    });
+    selectAllContainer.appendChild(selectAllButton);
+    legendContent.appendChild(selectAllContainer);
+
+    // Get node counts by type
+    const nodeCounts = new Map();
+    graphData.nodes.forEach(node => {
+        const type = node.type || 'default';
+        nodeCounts.set(type, (nodeCounts.get(type) || 0) + 1);
+    });
+
+    // Create legend items for each node type
+    const nodeTypes = new Set(graphData.nodes.map(node => node.type || 'default'));
     nodeTypes.forEach(type => {
         const color = getNodeColor(type);
+        const count = nodeCounts.get(type) || 0;
+        const isVisible = filterManager.isTypeVisible(type);
+
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-            <span class="legend-color-box" style="background-color: ${color};"></span>
-            <span>${type}</span>
-        `;
+        
+        // Create checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isVisible;
+        checkbox.addEventListener('change', () => {
+            filterManager.setTypeVisibility(type, checkbox.checked);
+        });
+
+        // Create color box
+        const colorBox = document.createElement('span');
+        colorBox.className = 'legend-color-box';
+        colorBox.style.backgroundColor = color;
+
+        // Create type label with count
+        const label = document.createElement('span');
+        label.className = 'legend-label';
+        label.textContent = `${type} (${count})`;
+
+        // Assemble the legend item
+        legendItem.appendChild(checkbox);
+        legendItem.appendChild(colorBox);
+        legendItem.appendChild(label);
         legendContent.appendChild(legendItem);
     });
 
     // Add default color if not already present and if default exists in config
-     if (!nodeTypes.has('default') && config.visualization.nodeColors['default']) {
+    if (!nodeTypes.has('default') && config.visualization.nodeColors['default']) {
         const color = config.visualization.nodeColors['default'];
+        const count = nodeCounts.get('default') || 0;
+        const isVisible = filterManager.isTypeVisible('default');
+
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-            <span class="legend-color-box" style="background-color: ${color};"></span>
-            <span>default</span>
-        `;
+        
+        // Create checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isVisible;
+        checkbox.addEventListener('change', () => {
+            filterManager.setTypeVisibility('default', checkbox.checked);
+        });
+
+        // Create color box
+        const colorBox = document.createElement('span');
+        colorBox.className = 'legend-color-box';
+        colorBox.style.backgroundColor = color;
+
+        // Create type label with count
+        const label = document.createElement('span');
+        label.className = 'legend-label';
+        label.textContent = `default (${count})`;
+
+        // Assemble the legend item
+        legendItem.appendChild(checkbox);
+        legendItem.appendChild(colorBox);
+        legendItem.appendChild(label);
         legendContent.appendChild(legendItem);
     }
+
+    // Add listener for filter state changes to update checkboxes
+    filterManager.addListener((filterState) => {
+        const checkboxes = legendContent.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((checkbox, index) => {
+            const type = checkbox.parentElement.querySelector('.legend-label').textContent.split(' ')[0];
+            checkbox.checked = filterState[type];
+        });
+        
+        // Update Select All button text
+        const allVisible = Object.values(filterState).every(v => v);
+        selectAllButton.textContent = allVisible ? 'Select All' : 'Deselect All';
+    });
 }
 
 // Update the info panel with details of the selected item (node or link)

@@ -42,6 +42,7 @@ export function createNavMenu() {
     navMenu.innerHTML = `
         <a href="data-validation-tests.html">Data Validation Tests</a>
         <a href="data-fetching-tests.html">Data Fetching Tests</a>
+        <a href="filter-tests.html">Filter Tests</a>
     `;
     return navMenu;
 }
