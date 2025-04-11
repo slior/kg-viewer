@@ -1,0 +1,58 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.nav-menu {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.nav-menu a {
+    margin-right: 15px;
+    text-decoration: none;
+    color: #337ab7;
+}
+
+.nav-menu a:hover {
+    text-decoration: underline;
+}
+
+.test-results {
+    margin-top: 20px;
+}
+
+.test-case {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.pass {
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+.fail {
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.test-name {
+    font-weight: bold;
+}
+
+.test-message {
+    margin-top: 5px;
+    color: #666;
+}
+
+.test-summary {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+} 

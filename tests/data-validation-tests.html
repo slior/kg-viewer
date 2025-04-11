@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Validation Tests</title>
+    <link rel="stylesheet" href="test-styles.css">
+</head>
+<body>
+    <h1>Data Validation Tests</h1>
+    
+    <div id="nav-menu"></div>
+    <div id="test-results" class="test-results"></div>
+    <div id="test-summary" class="test-summary"></div>
+
+    <!-- Load test files -->
+    <script type="module">
+        // Import the modules we want to test
+        import { fetchGraphData } from '../js/data.js';
+        import { 
+            displayTestResult, 
+            displayTestSummary, 
+            createNavMenu, 
+            setupFetchMocking,
+            resetTestStats
+        } from './test-utils.js';
+
+        // Setup navigation
+        document.getElementById('nav-menu').appendChild(createNavMenu());
+
+        // Setup fetch mocking
+        const fetchMock = setupFetchMocking();
+
+        // Run tests
+        async function runTests() {
+            resetTestStats();
+
+            // Test 1: Valid data
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            },
+                            {
+                                id: "node2",
+                                name: "node2",
+                                type: "identity",
+                                description: "Another test node",
+                                insights: []
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node2", label: "connects to" }
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 1: Valid data", 
+                    true, 
+                    "Successfully validated data structure"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 1: Valid data", 
+                    false, 
+                    `Validation failed for valid data: ${error.message}`
+                );
+            }
+
+            // Test 2: Missing required node properties
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                // Missing name, type, description
+                                insights: ["test insight"]
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 2: Missing required node properties", 
+                    false, 
+                    "Expected validation to catch missing required node properties but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 2: Missing required node properties", 
+                    true, 
+                    `Validation correctly caught missing required node properties: ${error.message}`
+                );
+            }
+
+            // Test 3: Missing required link properties
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1" } // Missing label
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 3: Missing required link properties", 
+                    false, 
+                    "Expected validation to catch missing required link properties but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 3: Missing required link properties", 
+                    true, 
+                    `Validation correctly caught missing required link properties: ${error.message}`
+                );
+            }
+
+            // Test 4: Duplicate node IDs
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            },
+                            {
+                                id: "node1", // Duplicate ID
+                                name: "node2",
+                                type: "identity",
+                                description: "Another test node",
+                                insights: []
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 4: Duplicate node IDs", 
+                    false, 
+                    "Expected validation to catch duplicate node IDs but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 4: Duplicate node IDs", 
+                    true, 
+                    `Validation correctly caught duplicate node IDs: ${error.message}`
+                );
+            }
+
+            // Test 5: Invalid link references
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "nonexistent", label: "connects to" } // Invalid target
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 5: Invalid link references", 
+                    false, 
+                    "Expected validation to catch invalid link references but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 5: Invalid link references", 
+                    true, 
+                    `Validation correctly caught invalid link references: ${error.message}`
+                );
+            }
+
+            // Test 6: Empty nodes array
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [], // Empty nodes array
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 6: Empty nodes array", 
+                    false, 
+                    "Expected validation to catch empty nodes array but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 6: Empty nodes array", 
+                    true, 
+                    `Validation correctly caught empty nodes array: ${error.message}`
+                );
+            }
+
+            // Test 7: Missing insights array
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node"
+                                // Missing insights array
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 7: Missing insights array", 
+                    false, 
+                    "Expected validation to catch missing insights array but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 7: Missing insights array", 
+                    true, 
+                    `Validation correctly caught missing insights array: ${error.message}`
+                );
+            }
+            
+            // Restore original fetch
+            fetchMock.restore();
+            
+            // Display test summary
+            displayTestSummary();
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html> 

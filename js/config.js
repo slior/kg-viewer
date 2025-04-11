@@ -51,6 +51,13 @@ export const config = {
         statsPanelId: 'stats-content',
         reloadButtonId: 'reload-button',
         graphContainerId: 'graph-container'
+    },
+    // API configuration for fetching data from server
+    api: {
+        apiBaseUrl: 'http://localhost:8001', // Base URL for the server
+        apiEndpoint: '/data/sample.json', // Endpoint to fetch graph data
+        fetchTimeout: 10000, // 10 seconds timeout for API requests
+        retryCount: 3 // Number of retries for failed requests
     }
 };
 

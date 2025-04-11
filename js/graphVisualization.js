@@ -6,7 +6,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // ForceGraph3D is defined globally from the 3d-force-graph library loaded in index.html
 
 import { config, getNodeColor } from './config.js';
-import { getProcessedData } from './data.js'; // Import data loading function
 import { updateInfoPanel } from './uiManager.js'; // Import UI update function
 
 // Polyfill for process in browser
@@ -104,28 +103,33 @@ export function initGraphVisualization() {
 }
 
 // --- Data Loading and Rendering ---
-export function loadDataAndRender() {
-    console.log("Loading graph data...");
-    graphData = getProcessedData(); // Get data from data.js
-
+export async function loadDataAndRender(graphData) {
+    console.log("Loading graph data into visualization...");
+    
     if (!graph || !graph.graphData) {
         console.error("Graph object not initialized before loading data.");
-        return;
+        throw new Error("Graph visualization not initialized");
     }
 
     try {
+        // If graphData is not provided, use default behavior
+        if (!graphData) {
+            console.warn("No graph data provided to loadDataAndRender, this might cause issues");
+        }
+        
         // Feed data to the force-graph
         graph.graphData(graphData);
 
         // Setup initial camera position after graph data is loaded
         // Use timeout to allow layout to start settling
         setTimeout(() => {
-             graph.zoomToFit(400, config.camera.initialDistance * 0.8); // Adjust padding and distance
+            graph.zoomToFit(400, config.camera.initialDistance * 0.8); // Adjust padding and distance
         }, config.forceGraph.warmupTicks > 0 ? 500 : 50); // Wait a bit if warmup ticks exist
 
         console.log("Graph data loaded and rendering started.");
     } catch (error) {
-        console.error("Error loading graph data:", error);
+        console.error("Error loading graph data into visualization:", error);
+        throw error; // Propagate error to caller for handling
     }
 }
 

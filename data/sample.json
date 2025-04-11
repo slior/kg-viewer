@@ -1,0 +1,39 @@
+{
+    "nodes": [
+      {
+        "id": "node1",
+        "name": "yoav",
+        "type": "service",
+        "description": "This is the first service node.",
+        "insights": [ "insight1", "some other important insight" ]
+      },
+      {
+        "id": "node2",
+        "name": "ori",
+        "type": "identity",
+        "description": "An identity node.",
+        "insights": [ "insight21", "some other important insight about node2" ],
+        "some_other_prop": 74
+      },
+      {
+        "id": "node3",
+        "name": "node33",
+        "type": "resource",
+        "description": "A resource node connected to node1.",
+        "insights": ["insight3"]
+      },
+      {
+        "id": "node4",
+        "name": "node4",
+        "type": "service",
+        "description": "Another service node, connected to node2.",
+        "insights": ["insight4a", "insight4b"]
+      }
+    ],
+    "links": [
+      { "source": "node2", "target": "node1", "label": "brother of", "some_other_property": 5},
+      { "source": "node1", "target": "node2", "label": "brother of", "some_other_property": 5},
+      { "source": "node1", "target": "node3", "label": "consumes"},
+      { "source": "node2", "target": "node4", "label": "manages"}
+    ]
+}

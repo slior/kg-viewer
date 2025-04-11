@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Fetching Tests</title>
+    <link rel="stylesheet" href="test-styles.css">
+</head>
+<body>
+    <h1>Data Fetching Tests</h1>
+    
+    <div id="nav-menu"></div>
+    <div id="test-results" class="test-results"></div>
+    <div id="test-summary" class="test-summary"></div>
+
+    <!-- Load test files -->
+    <script type="module">
+        // Import the modules we want to test
+        import { fetchGraphData, getProcessedData } from '../js/data.js';
+        import { 
+            displayTestResult, 
+            displayTestSummary, 
+            createNavMenu, 
+            setupFetchMocking,
+            resetTestStats
+        } from './test-utils.js';
+
+        // Setup navigation
+        document.getElementById('nav-menu').appendChild(createNavMenu());
+
+        // Setup fetch mocking
+        const fetchMock = setupFetchMocking();
+
+        // Run tests
+        async function runTests() {
+            resetTestStats();
+
+            // Test 1: Successful data fetching
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                const data = await fetchGraphData();
+                displayTestResult(
+                    "Test 1: Successful data fetching", 
+                    true, 
+                    "Successfully fetched and processed data"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 1: Successful data fetching", 
+                    false, 
+                    `Failed: ${error.message}`
+                );
+            }
+
+            // Test 2: Network failure
+            try {
+                fetchMock.mock(() => Promise.reject(new Error("Network error")));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 2: Network failure", 
+                    false, 
+                    "Expected error handling to catch network failure but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 2: Network failure", 
+                    true, 
+                    `Error handling correctly caught network failure: ${error.message}`
+                );
+            }
+
+            // Test 3: Retry logic
+            let retryCount = 0;
+            fetchMock.mock(() => {
+                retryCount++;
+                if (retryCount <= 2) {
+                    return Promise.reject(new Error("Temporary failure"));
+                } else {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({
+                            nodes: [
+                                {
+                                    id: "node1",
+                                    name: "node1",
+                                    type: "service",
+                                    description: "Test node",
+                                    insights: ["test insight"]
+                                }
+                            ],
+                            links: [
+                                { source: "node1", target: "node1", label: "self" }
+                            ]
+                        })
+                    });
+                }
+            });
+            
+            try {
+                const data = await fetchGraphData(3); // Allow 3 retries
+                displayTestResult(
+                    "Test 3: Retry logic", 
+                    true, 
+                    `Successfully retried and fetched data after ${retryCount} attempts`
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 3: Retry logic", 
+                    false, 
+                    `Retry logic failed: ${error.message}`
+                );
+            }
+
+            // Test 4: Timeout handling
+            try {
+                fetchMock.mock(() => new Promise((resolve, reject) => {
+                    setTimeout(() => reject(new Error("Request timeout")), 100);
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 4: Timeout handling", 
+                    false, 
+                    "Expected timeout handling to catch timeout but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 4: Timeout handling", 
+                    true, 
+                    `Timeout handling correctly caught timeout: ${error.message}`
+                );
+            }
+
+            // Test 5: Invalid JSON response
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.reject(new Error("Invalid JSON"))
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 5: Invalid JSON response", 
+                    false, 
+                    "Expected error handling to catch invalid JSON but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 5: Invalid JSON response", 
+                    true, 
+                    `Error handling correctly caught invalid JSON: ${error.message}`
+                );
+            }
+
+            // Test 6: Non-OK response
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: false,
+                    status: 404,
+                    statusText: "Not Found"
+                }));
+                
+                await fetchGraphData();
+                displayTestResult(
+                    "Test 6: Non-OK response", 
+                    false, 
+                    "Expected error handling to catch non-OK response but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 6: Non-OK response", 
+                    true, 
+                    `Error handling correctly caught non-OK response: ${error.message}`
+                );
+            }
+
+            // Test 7: getProcessedData function
+            try {
+                fetchMock.mock(() => Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        nodes: [
+                            {
+                                id: "node1",
+                                name: "node1",
+                                type: "service",
+                                description: "Test node",
+                                insights: ["test insight"]
+                            }
+                        ],
+                        links: [
+                            { source: "node1", target: "node1", label: "self" }
+                        ]
+                    })
+                }));
+                
+                const data = await getProcessedData();
+                displayTestResult(
+                    "Test 7: getProcessedData function", 
+                    true, 
+                    "Successfully processed data"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 7: getProcessedData function", 
+                    false, 
+                    `Failed: ${error.message}`
+                );
+            }
+
+            // Restore original fetch
+            fetchMock.restore();
+            
+            // Display test summary
+            displayTestSummary();
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html> 
