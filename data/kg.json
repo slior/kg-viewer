@@ -1,0 +1,279 @@
+{
+  "nodes": [
+    {
+      "id": "index.html",
+      "name": "index.html",
+      "type": "file/html",
+      "description": "Main HTML file for the application",
+      "insights": []
+    },
+    {
+      "id": "js/main.js",
+      "name": "main.js",
+      "type": "file/js",
+      "description": "Main JavaScript file that initializes the application",
+      "insights": []
+    },
+    {
+      "id": "js/data.js",
+      "name": "data.js",
+      "type": "file/js",
+      "description": "Handles data fetching and validation for the graph",
+      "insights": []
+    },
+    {
+      "id": "js/config.js",
+      "name": "config.js",
+      "type": "file/js",
+      "description": "Contains configuration settings for the application",
+      "insights": []
+    },
+    {
+      "id": "js/graphVisualization.js",
+      "name": "graphVisualization.js",
+      "type": "file/js",
+      "description": "Handles 3D visualization of the knowledge graph",
+      "insights": []
+    },
+    {
+      "id": "js/uiManager.js",
+      "name": "uiManager.js",
+      "type": "file/js",
+      "description": "Manages UI elements and interactions",
+      "insights": []
+    },
+    {
+      "id": "js/filterManager.js",
+      "name": "filterManager.js",
+      "type": "file/js",
+      "description": "Manages filtering of graph nodes",
+      "insights": []
+    },
+    {
+      "id": "js/colorManager.js",
+      "name": "colorManager.js",
+      "type": "file/js",
+      "description": "Manages dynamic color assignment for node types",
+      "insights": []
+    },
+    {
+      "id": "css/style.css",
+      "name": "style.css",
+      "type": "file/css",
+      "description": "Main stylesheet for the application",
+      "insights": []
+    },
+    {
+      "id": "tests/filter-tests.html",
+      "name": "filter-tests.html",
+      "type": "file/html",
+      "description": "Tests for filter functionality",
+      "insights": []
+    },
+    {
+      "id": "tests/test-utils.js",
+      "name": "test-utils.js",
+      "type": "file/js",
+      "description": "Utility functions for testing",
+      "insights": []
+    },
+    {
+      "id": "tests/README.md",
+      "name": "README.md",
+      "type": "file/md",
+      "description": "Documentation for tests",
+      "insights": []
+    },
+    {
+      "id": "tests/data-fetching-tests.html",
+      "name": "data-fetching-tests.html",
+      "type": "file/html",
+      "description": "Tests for data fetching functionality",
+      "insights": []
+    },
+    {
+      "id": "tests/data-validation-tests.html",
+      "name": "data-validation-tests.html",
+      "type": "file/html",
+      "description": "Tests for data validation functionality",
+      "insights": []
+    },
+    {
+      "id": "tests/test-styles.css",
+      "name": "test-styles.css",
+      "type": "file/css",
+      "description": "Stylesheet for tests",
+      "insights": []
+    },
+    {
+      "id": "docs/changes.md",
+      "name": "changes.md",
+      "type": "file/md",
+      "description": "Documentation of changes",
+      "insights": []
+    },
+    {
+      "id": "docs/spec.md",
+      "name": "spec.md",
+      "type": "file/md",
+      "description": "Specification document",
+      "insights": []
+    },
+    {
+      "id": "docs/features/feature_reading_data.md",
+      "name": "feature_reading_data.md",
+      "type": "file/md",
+      "description": "Documentation for data reading feature",
+      "insights": []
+    },
+    {
+      "id": "docs/features/filter_nodes.md",
+      "name": "filter_nodes.md",
+      "type": "file/md",
+      "description": "Documentation for node filtering feature",
+      "insights": []
+    },
+    {
+      "id": "README.md",
+      "name": "README.md",
+      "type": "file/md",
+      "description": "Main project documentation",
+      "insights": []
+    },
+    {
+      "id": "LICENSE",
+      "name": "LICENSE",
+      "type": "file/txt",
+      "description": "License information",
+      "insights": []
+    },
+    {
+      "id": ".gitignore",
+      "name": ".gitignore",
+      "type": "file/txt",
+      "description": "Git ignore file",
+      "insights": []
+    },
+    {
+      "id": "data/sample.json",
+      "name": "sample.json",
+      "type": "file/json",
+      "description": "Sample data for the knowledge graph",
+      "insights": []
+    },
+    {
+      "id": "data/kg.json",
+      "name": "kg.json",
+      "type": "file/json",
+      "description": "Knowledge graph data for the application",
+      "insights": []
+    }
+  ],
+  "links": [
+    {
+      "source": "js/main.js",
+      "target": "js/graphVisualization.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/main.js",
+      "target": "js/uiManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/main.js",
+      "target": "js/data.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/data.js",
+      "target": "js/config.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/graphVisualization.js",
+      "target": "js/config.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/graphVisualization.js",
+      "target": "js/uiManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/graphVisualization.js",
+      "target": "js/filterManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/uiManager.js",
+      "target": "js/config.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/uiManager.js",
+      "target": "js/filterManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/uiManager.js",
+      "target": "js/colorManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/filterManager.js",
+      "target": "js/config.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/config.js",
+      "target": "js/colorManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "index.html",
+      "target": "js/main.js",
+      "label": "imports"
+    },
+    {
+      "source": "index.html",
+      "target": "css/style.css",
+      "label": "imports"
+    },
+    {
+      "source": "tests/filter-tests.html",
+      "target": "js/filterManager.js",
+      "label": "tests"
+    },
+    {
+      "source": "tests/filter-tests.html",
+      "target": "js/config.js",
+      "label": "tests"
+    },
+    {
+      "source": "tests/filter-tests.html",
+      "target": "tests/test-utils.js",
+      "label": "imports"
+    },
+    {
+      "source": "tests/data-fetching-tests.html",
+      "target": "js/data.js",
+      "label": "tests"
+    },
+    {
+      "source": "tests/data-fetching-tests.html",
+      "target": "tests/test-utils.js",
+      "label": "imports"
+    },
+    {
+      "source": "tests/data-validation-tests.html",
+      "target": "js/data.js",
+      "label": "tests"
+    },
+    {
+      "source": "tests/data-validation-tests.html",
+      "target": "tests/test-utils.js",
+      "label": "imports"
+    }
+  ]
+} 

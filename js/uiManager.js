@@ -1,6 +1,7 @@
 // js/uiManager.js
 import { config, getNodeColor } from './config.js';
 import { filterManager } from './filterManager.js';
+import { getTypeColorMappings } from './colorManager.js';
 
 // Get references to UI elements
 const infoContent = document.getElementById(config.ui.infoPanelId);
@@ -220,6 +221,9 @@ export function generateLegend(graphData) {
         const type = node.type || 'default';
         nodeCounts.set(type, (nodeCounts.get(type) || 0) + 1);
     });
+
+    // Get all type-color mappings from the color manager
+    const typeColorMappings = getTypeColorMappings();
 
     // Create legend items for each node type
     const nodeTypes = new Set(graphData.nodes.map(node => node.type || 'default'));
