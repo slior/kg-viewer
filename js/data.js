@@ -1,7 +1,32 @@
 // js/data.js
 import { config } from './config.js';
 
-// Function to fetch graph data from the server
+// Error message constants
+const ERRORS = {
+    UNDEFINED_DATA: "Graph data is undefined or null",
+    INVALID_STRUCTURE: "Graph data must contain 'nodes' and 'links' arrays",
+    MISSING_NODE_ID: "Each node must have an 'id' property",
+    MISSING_NODE_NAME: "Each node must have a 'name' property",
+    MISSING_NODE_TYPE: "Each node must have a 'type' property",
+    MISSING_NODE_DESC: "Each node must have a 'description' property",
+    MISSING_INSIGHTS: "Each node must have an 'insights' array (can be empty)",
+    DUPLICATE_NODE_ID: (id) => `Duplicate node ID found: ${id}`,
+    MISSING_LINK_SOURCE: "Each link must have a 'source' property",
+    MISSING_LINK_TARGET: "Each link must have a 'target' property",
+    MISSING_LINK_LABEL: "Each link must have a 'label' property",
+    INVALID_SOURCE: (id) => `Link source references non-existent node ID: ${id}`,
+    INVALID_TARGET: (id) => `Link target references non-existent node ID: ${id}`,
+    SERVER_ERROR: (status) => `Server responded with status: ${status}`
+};
+
+/**
+ * Fetches graph data from the server with retry capability
+ * @param {number} retryCount - Number of retry attempts remaining
+ * @returns {Promise<Object>} The graph data object containing nodes and links
+ * @throws {Error} If the server request fails after all retries
+ * @throws {Error} If the response is not valid JSON
+ * @throws {Error} If the server returns a non-200 status code
+ */
 export async function fetchGraphData(retryCount = config.api.retryCount) {
     const url = `${config.api.apiBaseUrl}${config.api.apiEndpoint}`;
     
@@ -19,11 +44,10 @@ export async function fetchGraphData(retryCount = config.api.retryCount) {
             signal: controller.signal
         });
         
-        // Clear the timeout
         clearTimeout(timeout);
         
         if (!response.ok) {
-            throw new Error(`Server responded with status: ${response.status}`);
+            throw new Error(ERRORS.SERVER_ERROR(response.status));
         }
         
         const data = await response.json();
@@ -49,77 +73,59 @@ export async function fetchGraphData(retryCount = config.api.retryCount) {
     }
 }
 
-// Function to validate graph data structure
+/**
+ * Validates the structure and content of the graph data
+ * @param {Object} data - The graph data object to validate
+ * @throws {Error} If any validation check fails
+ */
 function validateGraphData(data) {
-    // Check if data object exists
     if (!data) {
-        throw new Error("Graph data is undefined or null");
+        throw new Error(ERRORS.UNDEFINED_DATA);
     }
     
-    // Check for nodes and links arrays
     if (!Array.isArray(data.nodes) || !Array.isArray(data.links)) {
-        throw new Error("Graph data must contain 'nodes' and 'links' arrays");
+        throw new Error(ERRORS.INVALID_STRUCTURE);
     }
     
-    // Validate each node has required properties
     const nodeIds = new Set();
     for (const node of data.nodes) {
-        if (!node.id) {
-            throw new Error("Each node must have an 'id' property");
-        }
-        if (!node.name) {
-            throw new Error("Each node must have a 'name' property");
-        }
-        if (!node.type) {
-            throw new Error("Each node must have a 'type' property");
-        }
-        if (!node.description) {
-            throw new Error("Each node must have a 'description' property");
-        }
+        if (!node.id) throw new Error(ERRORS.MISSING_NODE_ID);
+        if (!node.name) throw new Error(ERRORS.MISSING_NODE_NAME);
+        if (!node.type) throw new Error(ERRORS.MISSING_NODE_TYPE);
+        if (!node.description) throw new Error(ERRORS.MISSING_NODE_DESC);
+        if (!Array.isArray(node.insights)) throw new Error(ERRORS.MISSING_INSIGHTS);
         
-        // Check for insights array (can be empty)
-        if (!Array.isArray(node.insights)) {
-            throw new Error("Each node must have an 'insights' array (can be empty)");
-        }
-        
-        // Check for unique node ids
         if (nodeIds.has(node.id)) {
-            throw new Error(`Duplicate node ID found: ${node.id}`);
+            throw new Error(ERRORS.DUPLICATE_NODE_ID(node.id));
         }
         nodeIds.add(node.id);
     }
     
-    // Validate each link has required properties and references valid nodes
     for (const link of data.links) {
-        if (!link.source) {
-            throw new Error("Each link must have a 'source' property");
-        }
-        if (!link.target) {
-            throw new Error("Each link must have a 'target' property");
-        }
-        if (!link.label) {
-            throw new Error("Each link must have a 'label' property");
-        }
+        if (!link.source) throw new Error(ERRORS.MISSING_LINK_SOURCE);
+        if (!link.target) throw new Error(ERRORS.MISSING_LINK_TARGET);
+        if (!link.label) throw new Error(ERRORS.MISSING_LINK_LABEL);
         
-        // Check if source and target nodes exist
         if (!nodeIds.has(link.source)) {
-            throw new Error(`Link source references non-existent node ID: ${link.source}`);
+            throw new Error(ERRORS.INVALID_SOURCE(link.source));
         }
         if (!nodeIds.has(link.target)) {
-            throw new Error(`Link target references non-existent node ID: ${link.target}`);
+            throw new Error(ERRORS.INVALID_TARGET(link.target));
         }
     }
     
-    // Data is valid if we reach this point
     return true;
 }
 
-// Function to process the data before using it in the visualization
+/**
+ * Fetches and processes the graph data for visualization
+ * @returns {Promise<Object>} The processed graph data
+ * @throws {Error} If data fetching or processing fails
+ */
 export async function getProcessedData() {
     console.log("Fetching and processing graph data...");
     
     try {
-        // Fetch data from server
         const graphData = await fetchGraphData();
         
         // Additional processing can be done here if needed

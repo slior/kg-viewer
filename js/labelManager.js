@@ -1,6 +1,22 @@
 import { config } from './config.js';
 
+// Error message constants
+const ERRORS = {
+    LOAD_STATE: 'Error loading persisted label state:',
+    SAVE_STATE: 'Error saving label state:'
+};
+
+/**
+ * Manages the visibility state of node and link labels in the graph
+ * Provides persistence and event notification capabilities
+ */
 class LabelManager {
+    /** @type {{nodeLabelsVisible: boolean, linkLabelsVisible: boolean}} Current label visibility state */
+    labelState;
+    
+    /** @type {Set<Function>} Set of listeners to notify on state changes */
+    listeners;
+
     constructor() {
         this.labelState = {
             nodeLabelsVisible: config.labels.defaultNodeLabelsVisible,
@@ -10,7 +26,10 @@ class LabelManager {
         this.loadPersistedState();
     }
 
-    // Load persisted state from localStorage
+    /**
+     * Loads persisted state from localStorage
+     * @private
+     */
     loadPersistedState() {
         if (!config.labels.persistState) return;
 
@@ -24,51 +43,72 @@ class LabelManager {
                 };
             }
         } catch (error) {
-            console.error('Error loading persisted label state:', error);
+            console.error(ERRORS.LOAD_STATE, error);
         }
     }
 
-    // Save current state to localStorage
+    /**
+     * Saves current state to localStorage
+     * @private
+     */
     savePersistedState() {
         if (!config.labels.persistState) return;
 
         try {
             localStorage.setItem(config.labels.storageKey, JSON.stringify(this.labelState));
         } catch (error) {
-            console.error('Error saving label state:', error);
+            console.error(ERRORS.SAVE_STATE, error);
         }
     }
 
-    // Get current label visibility state
+    /**
+     * Gets the current label visibility state
+     * @returns {{nodeLabelsVisible: boolean, linkLabelsVisible: boolean}} Copy of the current state
+     */
     getLabelState() {
         return { ...this.labelState };
     }
 
-    // Set node labels visibility
+    /**
+     * Sets the visibility state for node labels
+     * @param {boolean} visible - The visibility state to set
+     */
     setNodeLabelsVisible(visible) {
         this.labelState.nodeLabelsVisible = visible;
         this.savePersistedState();
         this.notifyListeners();
     }
 
-    // Set link labels visibility
+    /**
+     * Sets the visibility state for link labels
+     * @param {boolean} visible - The visibility state to set
+     */
     setLinkLabelsVisible(visible) {
         this.labelState.linkLabelsVisible = visible;
         this.savePersistedState();
         this.notifyListeners();
     }
 
-    // Add a listener for state changes
+    /**
+     * Adds a listener for label state changes
+     * @param {Function} listener - Callback function to notify of state changes
+     */
     addListener(listener) {
         this.listeners.add(listener);
     }
 
-    // Remove a listener
+    /**
+     * Removes a listener
+     * @param {Function} listener - The listener to remove
+     */
     removeListener(listener) {
         this.listeners.delete(listener);
     }
 
-    // Notify all listeners of state change
+    /**
+     * Notifies all listeners of state changes
+     * @private
+     */
     notifyListeners() {
         this.listeners.forEach(listener => listener(this.labelState));
     }

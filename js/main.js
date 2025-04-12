@@ -3,67 +3,58 @@ import { initGraphVisualization, loadDataAndRender } from './graphVisualization.
 import { initUIManager, updateStats, generateLegend, showLoadingIndicator, hideLoadingIndicator, showErrorMessage } from './uiManager.js';
 import { getProcessedData } from './data.js';
 
-// --- Application Initialization ---
+// Constants for messages
+const LOADING_MESSAGE = "Loading graph data...";
+const RELOADING_MESSAGE = "Reloading graph data...";
+const INIT_SUCCESS_MESSAGE = "Application initialized successfully.";
+const RELOAD_SUCCESS_MESSAGE = "Graph reloaded successfully.";
+const LOAD_ERROR_MESSAGE = "Failed to load graph data. Please try again later.";
+const RELOAD_ERROR_MESSAGE = "Failed to reload graph data. Please try again later.";
+
+/**
+ * Initializes the application by loading data and setting up UI components
+ * @throws {Error} If data loading or initialization fails
+ */
 async function initializeApp() {
     console.log("Initializing application...");
     
     try {
-        // Show loading indicator
-        showLoadingIndicator("Loading graph data...");
-        
-        // 1. Load data first (now async)
+        showLoadingIndicator(LOADING_MESSAGE);
         const graphData = await getProcessedData();
-        
-        // 2. Initialize UI components, passing data and reload callback
-        initUIManager(graphData, reloadGraph); // Pass the reload function
-        
-        // 3. Initialize the 3D graph visualization
+        initUIManager(graphData, reloadGraph);
         initGraphVisualization();
-        
-        // 4. Load data into the visualization
-        await loadDataAndRender(graphData); // Pass the data directly to avoid fetching twice
-        
-        // Hide loading indicator
+        await loadDataAndRender(graphData);
         hideLoadingIndicator();
-        
-        console.log("Application initialized successfully.");
+        console.log(INIT_SUCCESS_MESSAGE);
     } catch (error) {
-        // Handle initialization errors
         console.error("Failed to initialize application:", error);
         hideLoadingIndicator();
-        showErrorMessage("Failed to load graph data. Please try again later.");
+        showErrorMessage(LOAD_ERROR_MESSAGE);
     }
 }
 
-// --- Reload Functionality ---
+/**
+ * Reloads the graph with fresh data from the server
+ * Updates UI components and visualization with new data
+ * @throws {Error} If data reloading fails
+ */
 async function reloadGraph() {
     console.log("Reloading graph...");
     
     try {
-        // Show loading indicator during reload
-        showLoadingIndicator("Reloading graph data...");
-        
-        // Fetch fresh data from server
+        showLoadingIndicator(RELOADING_MESSAGE);
         const graphData = await getProcessedData();
-        
-        // Update UI stats and legend (in case data structure changed)
         updateStats(graphData);
         generateLegend(graphData);
-        
-        // Reload data in the visualization
         await loadDataAndRender(graphData);
-        
-        // Hide loading indicator
         hideLoadingIndicator();
-        
-        console.log("Graph reloaded successfully.");
+        console.log(RELOAD_SUCCESS_MESSAGE);
     } catch (error) {
         console.error("Failed to reload graph:", error);
         hideLoadingIndicator();
-        showErrorMessage("Failed to reload graph data. Please try again later.");
+        showErrorMessage(RELOAD_ERROR_MESSAGE);
     }
 }
 
-// --- Entry Point ---
 // Wait for the DOM to be fully loaded before initializing
 document.addEventListener('DOMContentLoaded', initializeApp);

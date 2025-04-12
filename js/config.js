@@ -1,46 +1,89 @@
 // js/config.js
 import { getColorForType } from './colorManager.js';
 
-// Central configuration for the application
+// Graph visualization constants
+const GRAPH_CONSTANTS = {
+    NODE_SIZE: 8,
+    LINK_WIDTH: 1,
+    LINK_OPACITY: 0.6,
+    PARTICLE_WIDTH: 2,
+    PARTICLE_SPEED: 0.01,
+    ARROW_LENGTH: 4,
+    ARROW_COLOR: 'rgba(200, 200, 200, 0.8)',
+    BACKGROUND_COLOR: 0x111111,
+    LABEL_DISTANCE: 150
+};
+
+// Force simulation constants
+const FORCE_CONSTANTS = {
+    CHARGE_STRENGTH: -50,
+    LINK_DISTANCE: 50,
+    WARMUP_TICKS: 200,
+    COOLDOWN_TICKS: 0,
+    COOLDOWN_TIME: 15000
+};
+
+// Camera constants
+const CAMERA_CONSTANTS = {
+    INITIAL_DISTANCE: 300,
+    NEAR: 0.1,
+    FAR: 10000,
+    DAMPING_FACTOR: 0.05,
+    ROTATE_SPEED: 0.5,
+    ZOOM_SPEED: 1.0,
+    PAN_SPEED: 0.5,
+    MOVE_SPEED: 200,
+    ASCEND_DESCEND_SPEED: 2.0
+};
+
+const API_CONSTANTS = {
+    BASE_URL: 'http://localhost:8001',
+    ENDPOINT: '/data/kg.json',
+    TIMEOUT: 10000,
+    RETRY_COUNT: 3
+};
+
+/**
+ * Central configuration object for the application
+ * @type {Object}
+ */
 export const config = {
     graph: {
-        nodeSize: 8, // Default size for nodes
-        linkWidth: 1, // Default width for links
-        linkOpacity: 0.6, // Default opacity for links
-        particleWidth: 2, // Width for particle effects on links (optional)
-        particleSpeed: 0.01, // Speed for particle effects (optional)
-        arrowLength: 4, // Length of the arrowhead
-        arrowColor: 'rgba(200, 200, 200, 0.8)', // Color of the arrowhead
+        nodeSize: GRAPH_CONSTANTS.NODE_SIZE,
+        linkWidth: GRAPH_CONSTANTS.LINK_WIDTH,
+        linkOpacity: GRAPH_CONSTANTS.LINK_OPACITY,
+        particleWidth: GRAPH_CONSTANTS.PARTICLE_WIDTH,
+        particleSpeed: GRAPH_CONSTANTS.PARTICLE_SPEED,
+        arrowLength: GRAPH_CONSTANTS.ARROW_LENGTH,
+        arrowColor: GRAPH_CONSTANTS.ARROW_COLOR,
     },
     forceGraph: {
-        chargeStrength: -50, // Repulsion force between nodes
-        linkDistance: 50, // Desired distance between linked nodes
-        warmupTicks: 200, // Number of layout simulation ticks to run initially
-        cooldownTicks: 0, // Ticks to run after interaction (0 means stop immediately)
-        cooldownTime: 15000, // Time in ms for layout engine to run
+        chargeStrength: FORCE_CONSTANTS.CHARGE_STRENGTH,
+        linkDistance: FORCE_CONSTANTS.LINK_DISTANCE,
+        warmupTicks: FORCE_CONSTANTS.WARMUP_TICKS,
+        cooldownTicks: FORCE_CONSTANTS.COOLDOWN_TICKS,
+        cooldownTime: FORCE_CONSTANTS.COOLDOWN_TIME,
     },
     visualization: {
-        backgroundColor: 0x111111, // Scene background color (use hex for three.js)
-        nodeShapes: 'sphere', // Default shape: 'sphere' or 'box' (implement switching later)
-        // Define colors based on node 'type'
+        backgroundColor: GRAPH_CONSTANTS.BACKGROUND_COLOR,
+        nodeShapes: 'sphere',
         nodeColors: {
-            'default': '#9E9E9E' // Grey for undefined types
+            'default': '#9E9E9E'
         },
-        labelDistance: 150, // Max distance to show node/link labels
+        labelDistance: GRAPH_CONSTANTS.LABEL_DISTANCE,
     },
     camera: {
-        initialDistance: 300, // Initial distance from the center
-        near: 0.1, // Camera near clipping plane
-        far: 10000, // Camera far clipping plane
+        initialDistance: CAMERA_CONSTANTS.INITIAL_DISTANCE,
+        near: CAMERA_CONSTANTS.NEAR,
+        far: CAMERA_CONSTANTS.FAR,
         controls: {
-            enableDamping: true, // Smoother camera movement
-            dampingFactor: 0.05,
-            rotateSpeed: 0.5,
-            zoomSpeed: 1.0,
-            panSpeed: 0.5,
-            // Custom keyboard controls (might need separate implementation)
-            moveSpeed: 200, // Speed for WASD/arrow keys
-            ascendDescendSpeed: 2.0 // Speed for PageUp/PageDown
+            enableDamping: true,
+            dampingFactor: CAMERA_CONSTANTS.DAMPING_FACTOR,
+            rotateSpeed: CAMERA_CONSTANTS.ROTATE_SPEED,
+            zoomSpeed: CAMERA_CONSTANTS.ZOOM_SPEED,
+            panSpeed: CAMERA_CONSTANTS.PAN_SPEED,
+            moveSpeed: CAMERA_CONSTANTS.MOVE_SPEED,
+            ascendDescendSpeed: CAMERA_CONSTANTS.ASCEND_DESCEND_SPEED
         }
     },
     ui: {
@@ -50,18 +93,16 @@ export const config = {
         reloadButtonId: 'reload-button',
         graphContainerId: 'graph-container'
     },
-    // API configuration for fetching data from server
     api: {
-        apiBaseUrl: 'http://localhost:8001', // Base URL for the server
-        apiEndpoint: '/data/kg.json', // Endpoint to fetch graph data
-        fetchTimeout: 10000, // 10 seconds timeout for API requests
-        retryCount: 3 // Number of retries for failed requests
+        apiBaseUrl: API_CONSTANTS.BASE_URL,
+        apiEndpoint: API_CONSTANTS.ENDPOINT,
+        fetchTimeout: API_CONSTANTS.TIMEOUT,
+        retryCount: API_CONSTANTS.RETRY_COUNT
     },
-    // Filter configuration
     filter: {
-        persistState: true, // Whether to persist filter state
-        storageKey: 'kg-viewer-filters', // localStorage key for filter state
-        defaultVisible: true // Default visibility state for node types
+        persistState: true,
+        storageKey: 'kg-viewer-filters',
+        defaultVisible: true
     },
     labels: {
         persistState: true, // Whether to persist label visibility state
@@ -71,12 +112,14 @@ export const config = {
     }
 };
 
-// Function to get color based on node type
+/**
+ * Gets the color for a node based on its type
+ * @param {string} nodeType - The type of the node
+ * @returns {string} The color code for the node type
+ */
 export function getNodeColor(nodeType) {
-    // Use the dynamic color manager for all types except undefined
     if (!nodeType) {
         return config.visualization.nodeColors['default'];
     }
-    
     return getColorForType(nodeType);
 }

@@ -1,6 +1,10 @@
 // js/colorManager.js
 
-// Predefined color palette for node types
+/**
+ * Predefined color palette for node types
+ * Each color is a Material Design color with its name in comments
+ * @type {string[]}
+ */
 const colorPalette = [
     '#FF5252', // Red
     '#FF4081', // Pink
@@ -33,32 +37,37 @@ const colorPalette = [
     '#FF9E80', // Deep Orange Accent
 ];
 
-// Map to store assigned colors for node types
+/** @type {Map<string, string>} Map to store assigned colors for node types */
 const typeColorMap = new Map();
 
-// Function to get a color for a node type
+/**
+ * Gets a color for a node type, assigning a new color if the type hasn't been seen before
+ * @param {string} nodeType - The type of node to get a color for
+ * @returns {string} The hex color code for the node type
+ */
 export function getColorForType(nodeType) {
-    // If we already have a color for this type, return it
     if (typeColorMap.has(nodeType)) {
         return typeColorMap.get(nodeType);
     }
     
-    // Otherwise, assign a new color from the palette
     const colorIndex = typeColorMap.size % colorPalette.length;
     const color = colorPalette[colorIndex];
-    
-    // Store the color for this type
     typeColorMap.set(nodeType, color);
     
     return color;
 }
 
-// Function to get all type-color mappings
+/**
+ * Gets all current type-color mappings
+ * @returns {Object.<string, string>} Object mapping node types to their assigned colors
+ */
 export function getTypeColorMappings() {
     return Object.fromEntries(typeColorMap);
 }
 
-// Function to reset the color assignments
+/**
+ * Resets all color assignments, clearing the type-color map
+ */
 export function resetColorAssignments() {
     typeColorMap.clear();
 } 
