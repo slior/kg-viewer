@@ -190,3 +190,24 @@ body {
     white-space: nowrap;
     z-index: 1000;
 }
+
+/* Graph Tooltip Styles */
+.graph-tooltip {
+    position: absolute;
+    background-color: rgba(255, 0, 0, 0.8); /* Red background for visibility */
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 9999; /* Ensure it's on top */
+    display: none; /* Hidden by default */
+    max-width: 200px;
+    word-wrap: break-word;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.2s ease;
+    /* Position the tooltip above the cursor */
+    transform: translate(-50%, -100%);
+    margin-top: -10px;
+    border: 2px solid white; /* White border for visibility */
+}

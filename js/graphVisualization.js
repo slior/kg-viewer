@@ -18,6 +18,7 @@ if (typeof window !== 'undefined' && !window.process) {
 
 let scene, camera, renderer, controls, graph;
 let graphData = {}; // Store the graph data locally
+// let tooltip; // Reference to the tooltip element
 
 const graphContainer = document.getElementById(config.ui.graphContainerId);
 
@@ -28,6 +29,60 @@ export function initGraphVisualization() {
         return;
     }
     console.log("Initializing Graph Visualization...");
+
+    // // Create tooltip element
+    // const tooltipContainer = document.createElement('div');
+    // tooltipContainer.style.position = 'absolute';
+    // tooltipContainer.style.top = '0';
+    // tooltipContainer.style.left = '0';
+    // tooltipContainer.style.width = '100%';
+    // tooltipContainer.style.height = '100%';
+    // tooltipContainer.style.pointerEvents = 'none';
+    // tooltipContainer.style.zIndex = '10000';
+    // graphContainer.appendChild(tooltipContainer);
+
+    // tooltip = document.createElement('div');
+    // tooltip.className = 'graph-tooltip';
+    // tooltip.style.position = 'absolute';
+    // tooltip.style.pointerEvents = 'none';
+    // tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    // tooltip.style.color = 'white';
+    // tooltip.style.padding = '8px';
+    // tooltip.style.borderRadius = '4px';
+    // tooltip.style.fontSize = '14px';
+    // tooltip.style.maxWidth = '200px';
+    // tooltip.style.wordWrap = 'break-word';
+    // tooltip.style.zIndex = '10000';
+    // tooltip.style.display = 'none';
+    // tooltipContainer.appendChild(tooltip);
+    // console.log('Tooltip created and added to DOM:', tooltip);
+    
+    // // Create a test button to toggle tooltip visibility
+    // const testButton = document.createElement('button');
+    // testButton.textContent = 'Toggle Tooltip';
+    // testButton.style.position = 'absolute';
+    // testButton.style.top = '10px';
+    // testButton.style.left = '10px';
+    // testButton.style.zIndex = '10000';
+    // testButton.addEventListener('click', () => {
+    //     if (tooltip.style.display === 'none') {
+    //         tooltip.style.display = 'block';
+    //         console.log('Tooltip manually shown');
+    //     } else {
+    //         tooltip.style.display = 'none';
+    //         console.log('Tooltip manually hidden');
+    //     }
+    // });
+    // graphContainer.appendChild(testButton);
+    
+    // // Log the position and dimensions of the graph container
+    // console.log('Graph container position and dimensions:', {
+    //     offsetWidth: graphContainer.offsetWidth,
+    //     offsetHeight: graphContainer.offsetHeight,
+    //     clientWidth: graphContainer.clientWidth,
+    //     clientHeight: graphContainer.clientHeight,
+    //     getBoundingClientRect: graphContainer.getBoundingClientRect()
+    // });
 
     // 1. Scene
     scene = new THREE.Scene();
@@ -108,6 +163,8 @@ export function initGraphVisualization() {
               
               return group;
           })
+        //   .linkLabel('label')
+          .linkLabel(link => link.label)
           .linkThreeObjectExtend(true)
           .linkThreeObject(link => {
               // Create a group to hold the link
@@ -177,6 +234,35 @@ export function initGraphVisualization() {
         // Set up event handlers
         graph.onNodeClick(handleNodeClick);
         graph.onLinkClick(handleLinkClick);
+        
+        // Log available methods on the graph object
+        // console.log('Available methods on graph object:', Object.keys(graph).filter(key => typeof graph[key] === 'function'));
+        
+        // Add hover events for links
+        // graph.onLinkHover(link => {
+        //     if (link && link.label) {
+        //         tooltip.textContent = link.label;
+        //         tooltip.style.display = 'block';
+        //         tooltip.style.visibility = 'visible';
+        //         tooltip.style.opacity = '1';
+        //     } else {
+        //         tooltip.style.display = 'none';
+        //         tooltip.style.visibility = 'hidden';
+        //         tooltip.style.opacity = '0';
+        //     }
+        // });
+        
+        // // Track mouse position for tooltip
+        // graphContainer.addEventListener('mousemove', (event) => {
+        //     // Get the position relative to the graph container
+        //     const rect = graphContainer.getBoundingClientRect();
+        //     const x = event.clientX - rect.left;
+        //     const y = event.clientY - rect.top;
+            
+        //     // Position the tooltip at the cursor position
+        //     tooltip.style.left = x + 'px';
+        //     tooltip.style.top = y + 'px';
+        // });
 
         // Add filter state change listener
         filterManager.addListener(handleFilterStateChange);
@@ -253,8 +339,30 @@ function handleNodeClick(node, event) {
 
 function handleLinkClick(link, event) {
     console.log("Link clicked:", link);
-     // Display link info in the UI panel
-     updateInfoPanel(link, 'link');
+    
+    // // Show tooltip with link label
+    // if (link && link.label) {
+    //     tooltip.textContent = link.label;
+    //     tooltip.style.display = 'block';
+        
+    //     // Position tooltip at click position
+    //     const rect = graphContainer.getBoundingClientRect();
+    //     const x = event.clientX - rect.left;
+    //     const y = event.clientY - rect.top;
+    //     tooltip.style.left = x + 'px';
+    //     tooltip.style.top = y + 'px';
+        
+    //     console.log('Tooltip shown at click position:', x, y);
+        
+    //     // Hide tooltip after 3 seconds
+    //     setTimeout(() => {
+    //         tooltip.style.display = 'none';
+    //         console.log('Tooltip hidden after timeout');
+    //     }, 3000);
+    // }
+    
+    // Display link info in the UI panel
+    updateInfoPanel(link, 'link');
 }
 
 // --- Filter State Management ---
@@ -345,51 +453,21 @@ function updateLinkLabels(visible) {
     // Create a new array to store link labels
     graph.__linkLabels = [];
     
-    if (visible) {
-        // Create new labels for all links
-        graphData.links.forEach(link => {
-            if (link.label && link.source && link.target) {
-                // Create the label sprite
-                const sprite = new SpriteText(link.label);
-                sprite.material.depthWrite = false;
-                sprite.color = 'white';
-                sprite.textHeight = 3;
-                
-                // Store the link reference on the sprite for later updates
-                sprite.__link = link;
-                
-                // Add the sprite to the scene
-                scene.add(sprite);
-                
-                // Store the sprite in the array
-                graph.__linkLabels.push(sprite);
-                
-                // Position the label
-                updateLinkLabelPosition(sprite, link);
-            }
-        });
+    // We no longer need to create sprites for link labels
+    // The labels will be shown as tooltips on hover
+    
+    // Hide tooltip if labels are not visible
+    if (!visible && tooltip) {
+        tooltip.style.display = 'none';
     }
     
     // Update the graph to apply changes
     graph.graphData(graphData);
 }
 
-// Update the position of a link label
+// Update the position of a link label - no longer needed
 function updateLinkLabelPosition(sprite, link) {
-    if (!link.source || !link.target) return;
-    
-    // Get the source and target node positions
-    const sourcePos = new THREE.Vector3(link.source.x, link.source.y, link.source.z);
-    const targetPos = new THREE.Vector3(link.target.x, link.target.y, link.target.z);
-    
-    // Calculate the middle point
-    const middlePos = new THREE.Vector3().addVectors(sourcePos, targetPos).multiplyScalar(0.5);
-    
-    // Position the label slightly above the middle point
-    sprite.position.set(middlePos.x, middlePos.y + 2, middlePos.z);
-    
-    // Make the label always face the camera
-    sprite.quaternion.copy(camera.quaternion);
+    // This function is no longer needed as we're using tooltips
 }
 
 // --- Animation Loop ---
@@ -399,14 +477,7 @@ function animate() {
     // Update controls
     controls.update();
     
-    // Update link label positions
-    if (graph.__linkLabels) {
-        graph.__linkLabels.forEach(sprite => {
-            if (sprite.__link) {
-                updateLinkLabelPosition(sprite, sprite.__link);
-            }
-        });
-    }
+    // We no longer need to update link label positions
     
     // Render the scene
     renderer.render(scene, camera);

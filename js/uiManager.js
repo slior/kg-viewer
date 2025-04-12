@@ -403,37 +403,37 @@ function initLabelControls() {
     nodeLabelsControl.appendChild(nodeLabelsTooltip);
     
     // Create link labels control
-    const linkLabelsControl = document.createElement('div');
-    linkLabelsControl.className = 'label-control';
+    // const linkLabelsControl = document.createElement('div');
+    // linkLabelsControl.className = 'label-control';
     
-    const linkLabelsCheckbox = document.createElement('input');
-    linkLabelsCheckbox.type = 'checkbox';
-    linkLabelsCheckbox.id = 'link-labels-checkbox';
-    linkLabelsCheckbox.checked = labelManager.getLabelState().linkLabelsVisible;
+    // const linkLabelsCheckbox = document.createElement('input');
+    // linkLabelsCheckbox.type = 'checkbox';
+    // linkLabelsCheckbox.id = 'link-labels-checkbox';
+    // linkLabelsCheckbox.checked = labelManager.getLabelState().linkLabelsVisible;
     
-    const linkLabelsLabel = document.createElement('label');
-    linkLabelsLabel.htmlFor = 'link-labels-checkbox';
-    linkLabelsLabel.textContent = 'Link Labels';
+    // const linkLabelsLabel = document.createElement('label');
+    // linkLabelsLabel.htmlFor = 'link-labels-checkbox';
+    // linkLabelsLabel.textContent = 'Link Labels';
     
-    const linkLabelsTooltip = document.createElement('span');
-    linkLabelsTooltip.className = 'tooltip';
-    linkLabelsTooltip.textContent = '?';
-    linkLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all links');
+    // const linkLabelsTooltip = document.createElement('span');
+    // linkLabelsTooltip.className = 'tooltip';
+    // linkLabelsTooltip.textContent = '?';
+    // linkLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all links');
     
-    linkLabelsControl.appendChild(linkLabelsCheckbox);
-    linkLabelsControl.appendChild(linkLabelsLabel);
-    linkLabelsControl.appendChild(linkLabelsTooltip);
+    // linkLabelsControl.appendChild(linkLabelsCheckbox);
+    // linkLabelsControl.appendChild(linkLabelsLabel);
+    // linkLabelsControl.appendChild(linkLabelsTooltip);
     
     // Add event listeners
     nodeLabelsCheckbox.addEventListener('change', (e) => {
         labelManager.setNodeLabelsVisible(e.target.checked);
     });
     
-    linkLabelsCheckbox.addEventListener('change', (e) => {
-        labelManager.setLinkLabelsVisible(e.target.checked);
-    });
+    // linkLabelsCheckbox.addEventListener('change', (e) => {
+    //     labelManager.setLinkLabelsVisible(e.target.checked);
+    // });
     
     // Add controls to the panel
     labelsContent.appendChild(nodeLabelsControl);
-    labelsContent.appendChild(linkLabelsControl);
+    // labelsContent.appendChild(linkLabelsControl);
 }
