@@ -2,11 +2,13 @@
 import { config, getNodeColor } from './config.js';
 import { filterManager } from './filterManager.js';
 import { getTypeColorMappings } from './colorManager.js';
+import { labelManager } from './labelManager.js';
 
 // Get references to UI elements
 const infoContent = document.getElementById(config.ui.infoPanelId);
 const legendContent = document.getElementById(config.ui.legendPanelId);
 const statsContent = document.getElementById(config.ui.statsPanelId);
+const labelsContent = document.getElementById('labels-content');
 const reloadButton = document.getElementById(config.ui.reloadButtonId);
 
 // --- Loading and Error UI Elements ---
@@ -31,6 +33,7 @@ export function initUIManager(graphData, reloadCallback) {
     infoContent.innerHTML = 'Select a node or edge to see details.';
     updateStats(graphData);
     generateLegend(graphData);
+    initLabelControls();
 
     // Setup event listeners
     reloadButton.addEventListener('click', () => {
@@ -371,4 +374,66 @@ export function updateInfoPanel(item, itemType) {
     }
 
     infoContent.innerHTML = htmlContent;
+}
+
+// Initialize label controls
+function initLabelControls() {
+    if (!labelsContent) return;
+
+    // Create node labels control
+    const nodeLabelsControl = document.createElement('div');
+    nodeLabelsControl.className = 'label-control';
+    
+    const nodeLabelsCheckbox = document.createElement('input');
+    nodeLabelsCheckbox.type = 'checkbox';
+    nodeLabelsCheckbox.id = 'node-labels-checkbox';
+    nodeLabelsCheckbox.checked = labelManager.getLabelState().nodeLabelsVisible;
+    
+    const nodeLabelsLabel = document.createElement('label');
+    nodeLabelsLabel.htmlFor = 'node-labels-checkbox';
+    nodeLabelsLabel.textContent = 'Node Labels';
+    
+    const nodeLabelsTooltip = document.createElement('span');
+    nodeLabelsTooltip.className = 'tooltip';
+    nodeLabelsTooltip.textContent = '?';
+    nodeLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all nodes');
+    
+    nodeLabelsControl.appendChild(nodeLabelsCheckbox);
+    nodeLabelsControl.appendChild(nodeLabelsLabel);
+    nodeLabelsControl.appendChild(nodeLabelsTooltip);
+    
+    // Create link labels control
+    const linkLabelsControl = document.createElement('div');
+    linkLabelsControl.className = 'label-control';
+    
+    const linkLabelsCheckbox = document.createElement('input');
+    linkLabelsCheckbox.type = 'checkbox';
+    linkLabelsCheckbox.id = 'link-labels-checkbox';
+    linkLabelsCheckbox.checked = labelManager.getLabelState().linkLabelsVisible;
+    
+    const linkLabelsLabel = document.createElement('label');
+    linkLabelsLabel.htmlFor = 'link-labels-checkbox';
+    linkLabelsLabel.textContent = 'Link Labels';
+    
+    const linkLabelsTooltip = document.createElement('span');
+    linkLabelsTooltip.className = 'tooltip';
+    linkLabelsTooltip.textContent = '?';
+    linkLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all links');
+    
+    linkLabelsControl.appendChild(linkLabelsCheckbox);
+    linkLabelsControl.appendChild(linkLabelsLabel);
+    linkLabelsControl.appendChild(linkLabelsTooltip);
+    
+    // Add event listeners
+    nodeLabelsCheckbox.addEventListener('change', (e) => {
+        labelManager.setNodeLabelsVisible(e.target.checked);
+    });
+    
+    linkLabelsCheckbox.addEventListener('change', (e) => {
+        labelManager.setLinkLabelsVisible(e.target.checked);
+    });
+    
+    // Add controls to the panel
+    labelsContent.appendChild(nodeLabelsControl);
+    labelsContent.appendChild(linkLabelsControl);
 }

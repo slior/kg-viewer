@@ -62,6 +62,12 @@ export const config = {
         persistState: true, // Whether to persist filter state
         storageKey: 'kg-viewer-filters', // localStorage key for filter state
         defaultVisible: true // Default visibility state for node types
+    },
+    labels: {
+        persistState: true, // Whether to persist label visibility state
+        storageKey: 'kg-viewer-labels', // localStorage key for label visibility state
+        defaultNodeLabelsVisible: true, // Default visibility for node labels
+        defaultLinkLabelsVisible: true // Default visibility for link labels
     }
 };
 

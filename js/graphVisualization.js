@@ -4,10 +4,12 @@ const THREE = window.THREE;
 // Import OrbitControls as a module
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // ForceGraph3D is defined globally from the 3d-force-graph library loaded in index.html
+// SpriteText is defined globally from the three-spritetext library loaded in index.html
 
 import { config, getNodeColor } from './config.js';
 import { updateInfoPanel } from './uiManager.js'; // Import UI update function
 import { filterManager } from './filterManager.js';
+import { labelManager } from './labelManager.js';
 
 // Polyfill for process in browser
 if (typeof window !== 'undefined' && !window.process) {
@@ -63,16 +65,102 @@ export function initGraphVisualization() {
         return;
     }
 
+    // Check if SpriteText is defined
+    if (typeof SpriteText === 'undefined') {
+        console.error("SpriteText is not defined. The three-spritetext library might not be loaded correctly.");
+        return;
+    }
+
     try {
         // Convert hex color to string for 3d-force-graph
         const backgroundColorString = '#' + config.visualization.backgroundColor.toString(16).padStart(6, '0');
         
+        // Get initial label state
+        const initialLabelState = labelManager.getLabelState();
+        
         // 5. Force-Directed Graph - Fixed method chaining
-        graph = ForceGraph3D({ three: THREE }) // Pass the global THREE instance to avoid duplicate loading
+        graph = ForceGraph3D({ three: THREE })
           (graphContainer)
-          .backgroundColor(backgroundColorString) // Use string color format
-          .nodeLabel('name')
-          .linkLabel('label')
+          .backgroundColor(backgroundColorString)
+          .nodeThreeObject(node => {
+              // Create a group to hold both the node and its label
+              const group = new THREE.Group();
+              
+              // Create the node sphere
+              const nodeGeometry = new THREE.SphereGeometry(config.graph.nodeSize);
+              const nodeMaterial = new THREE.MeshBasicMaterial({ 
+                  color: getNodeColor(node.type),
+                  transparent: true,
+                  opacity: 0.8
+              });
+              const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+              group.add(nodeMesh);
+              
+              // Create the label sprite if labels are visible
+              if (initialLabelState.nodeLabelsVisible) {
+                  const sprite = new SpriteText(node.name || node.id);
+                  sprite.material.depthWrite = false; // Make sprite background transparent
+                  sprite.color = 'white';
+                  sprite.textHeight = 4;
+                  sprite.position.set(0, config.graph.nodeSize + 2, 0); // Position above the node
+                  group.add(sprite);
+              }
+              
+              return group;
+          })
+          .linkThreeObjectExtend(true)
+          .linkThreeObject(link => {
+              // Create a group to hold the link
+              const group = new THREE.Group();
+              
+              // Create the link line using CylinderGeometry
+              const linkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
+              const linkMaterial = new THREE.MeshBasicMaterial({ 
+                  color: config.graph.arrowColor,
+                  transparent: true,
+                  opacity: config.graph.linkOpacity
+              });
+              const linkMesh = new THREE.Mesh(linkGeometry, linkMaterial);
+              linkMesh.rotation.x = Math.PI / 2; // Rotate to align with link direction
+              group.add(linkMesh);
+              
+              return group;
+          })
+          .linkPositionUpdate((linkObj, { start, end }) => {
+              // Calculate the middle point between start and end
+              const middlePos = {
+                  x: start.x + (end.x - start.x) / 2,
+                  y: start.y + (end.y - start.y) / 2,
+                  z: start.z + (end.z - start.z) / 2
+              };
+              
+              // Position the link object at the middle point
+              linkObj.position.set(middlePos.x, middlePos.y, middlePos.z);
+              
+              // Calculate the direction vector from start to end
+              const direction = new THREE.Vector3(
+                  end.x - start.x,
+                  end.y - start.y,
+                  end.z - start.z
+              );
+              
+              // Calculate the distance between nodes
+              const distance = direction.length();
+              
+              // Scale the link to match the distance between nodes
+              linkObj.scale.set(1, distance, 1);
+              
+              // Normalize the direction vector
+              direction.normalize();
+              
+              // Create a quaternion that rotates from the default cylinder direction (0,1,0) to our desired direction
+              const up = new THREE.Vector3(0, 1, 0);
+              const quaternion = new THREE.Quaternion();
+              quaternion.setFromUnitVectors(up, direction);
+              
+              // Apply the rotation
+              linkObj.quaternion.copy(quaternion);
+          })
           .linkDirectionalArrowLength(config.graph.arrowLength)
           .linkDirectionalArrowRelPos(1)
           .linkDirectionalArrowColor(config.graph.arrowColor)
@@ -92,6 +180,9 @@ export function initGraphVisualization() {
 
         // Add filter state change listener
         filterManager.addListener(handleFilterStateChange);
+
+        // Add label state change listener
+        labelManager.addListener(handleLabelStateChange);
     } catch (error) {
         console.error("Error initializing 3D force graph:", error);
         return;
@@ -130,6 +221,11 @@ export async function loadDataAndRender(data) {
 
         // Apply initial filter state
         applyFilterState(filterManager.getFilterState());
+        
+        // Apply initial label state
+        const labelState = labelManager.getLabelState();
+        updateNodeLabels(labelState.nodeLabelsVisible);
+        updateLinkLabels(labelState.linkLabelsVisible);
 
         // Setup initial camera position after graph data is loaded
         // Use timeout to allow layout to start settling
@@ -196,22 +292,124 @@ function applyFilterState(filterState) {
     graph.graphData(graphData);
 }
 
+// Handle label state changes
+function handleLabelStateChange(labelState) {
+    if (!graph) return;
+
+    // Update node labels
+    updateNodeLabels(labelState.nodeLabelsVisible);
+    
+    // Update link labels
+    updateLinkLabels(labelState.linkLabelsVisible);
+}
+
+// Update node labels visibility
+function updateNodeLabels(visible) {
+    if (!graph || !graphData || !graphData.nodes) return;
+    
+    graphData.nodes.forEach(node => {
+        if (node.__threeObj) {
+            // Find the label sprite (should be the second child of the group)
+            const labelSprite = node.__threeObj.children[1];
+            if (labelSprite && labelSprite instanceof SpriteText) {
+                labelSprite.visible = visible;
+            } else if (visible) {
+                // If label doesn't exist but should be visible, create it
+                const sprite = new SpriteText(node.name || node.id);
+                sprite.material.depthWrite = false;
+                sprite.color = 'white';
+                sprite.textHeight = 4;
+                sprite.position.set(0, config.graph.nodeSize + 2, 0);
+                node.__threeObj.add(sprite);
+            }
+        }
+    });
+    
+    // Update the graph to apply changes
+    graph.graphData(graphData);
+}
+
+// Update link labels visibility
+function updateLinkLabels(visible) {
+    if (!graph || !graphData || !graphData.links) return;
+    
+    // Remove all existing link labels from the scene
+    if (graph.__linkLabels) {
+        graph.__linkLabels.forEach(label => {
+            if (label.parent) {
+                label.parent.remove(label);
+            }
+        });
+    }
+    
+    // Create a new array to store link labels
+    graph.__linkLabels = [];
+    
+    if (visible) {
+        // Create new labels for all links
+        graphData.links.forEach(link => {
+            if (link.label && link.source && link.target) {
+                // Create the label sprite
+                const sprite = new SpriteText(link.label);
+                sprite.material.depthWrite = false;
+                sprite.color = 'white';
+                sprite.textHeight = 3;
+                
+                // Store the link reference on the sprite for later updates
+                sprite.__link = link;
+                
+                // Add the sprite to the scene
+                scene.add(sprite);
+                
+                // Store the sprite in the array
+                graph.__linkLabels.push(sprite);
+                
+                // Position the label
+                updateLinkLabelPosition(sprite, link);
+            }
+        });
+    }
+    
+    // Update the graph to apply changes
+    graph.graphData(graphData);
+}
+
+// Update the position of a link label
+function updateLinkLabelPosition(sprite, link) {
+    if (!link.source || !link.target) return;
+    
+    // Get the source and target node positions
+    const sourcePos = new THREE.Vector3(link.source.x, link.source.y, link.source.z);
+    const targetPos = new THREE.Vector3(link.target.x, link.target.y, link.target.z);
+    
+    // Calculate the middle point
+    const middlePos = new THREE.Vector3().addVectors(sourcePos, targetPos).multiplyScalar(0.5);
+    
+    // Position the label slightly above the middle point
+    sprite.position.set(middlePos.x, middlePos.y + 2, middlePos.z);
+    
+    // Make the label always face the camera
+    sprite.quaternion.copy(camera.quaternion);
+}
+
 // --- Animation Loop ---
 function animate() {
     requestAnimationFrame(animate);
-
-    // Update controls if damping is enabled
-    if (controls.enabled) {
-        controls.update();
+    
+    // Update controls
+    controls.update();
+    
+    // Update link label positions
+    if (graph.__linkLabels) {
+        graph.__linkLabels.forEach(sprite => {
+            if (sprite.__link) {
+                updateLinkLabelPosition(sprite, sprite.__link);
+            }
+        });
     }
-
-    // Update the force graph simulation/rendering
-    if (graph && graph.tickFrame) {
-         graph.tickFrame(); // Updates layout and renders the scene
-    } else {
-        // Fallback render if graph isn't managing the loop
-        renderer.render(scene, camera);
-    }
+    
+    // Render the scene
+    renderer.render(scene, camera);
 }
 
 // --- Resize Handling ---

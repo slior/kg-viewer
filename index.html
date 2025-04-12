@@ -31,6 +31,10 @@
             <div id="stats-content"></div>
             <button id="reload-button">Reload Graph</button>
         </div>
+        <div id="labels-panel">
+            <h2>Label Controls</h2>
+            <div id="labels-content"></div>
+        </div>
     </div>
 
     <!-- First load Three.js globally -->
@@ -39,12 +43,16 @@
     <!-- Then load 3d-force-graph -->
     <script src="https://unpkg.com/3d-force-graph@1.77.0/dist/3d-force-graph.min.js"></script>
     
+    <!-- Load three-spritetext for text labels -->
+    <script src="https://unpkg.com/three-spritetext"></script>
+    
     <!-- Import map for ES Modules - let them use the global Three.js instance -->
     <script type="importmap">
     {
         "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
-            "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three/examples/jsm/controls/OrbitControls.js"
+            "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three/examples/jsm/controls/OrbitControls.js",
+            "three-spritetext": "https://unpkg.com/three-spritetext"
         }
     }
     </script>
