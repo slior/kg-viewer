@@ -22,8 +22,12 @@ async function initializeApp() {
         showLoadingIndicator(LOADING_MESSAGE);
         const graphData = await getProcessedData();
         initUIManager(graphData, reloadGraph);
+
         initGraphVisualization();
+        updateStats(graphData);
+        generateLegend(graphData);
         await loadDataAndRender(graphData);
+
         hideLoadingIndicator();
         console.log(INIT_SUCCESS_MESSAGE);
     } catch (error) {

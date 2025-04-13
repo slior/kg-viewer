@@ -1,41 +1,80 @@
 // js/uiManager.js
 import { config, getNodeColor } from './config.js';
 import { filterManager } from './filterManager.js';
-import { getTypeColorMappings } from './colorManager.js';
 import { labelManager } from './labelManager.js';
+import { getTypeColorMappings } from './colorManager.js';
 
-// Get references to UI elements
-const infoContent = document.getElementById(config.ui.infoPanelId);
-const legendContent = document.getElementById(config.ui.legendPanelId);
+// Error message constants
+const ERRORS = {
+    CONTAINER_NOT_FOUND: 'Container element not found:',
+    ELEMENT_NOT_FOUND: 'Element not found:',
+    NO_DATA_PROVIDED: 'No graph data provided to update statistics',
+    NO_LEGEND_DATA: 'No graph data provided to generate legend'
+};
+
+// Log message constants
+const LOG_MESSAGES = {
+    INITIALIZING: 'Initializing UI Manager...',
+    INITIALIZED: 'UI Manager Initialized.',
+    UPDATING_STATS: 'Updating statistics...',
+    STATS_UPDATED: 'Statistics updated.',
+    GENERATING_LEGEND: 'Generating legend...',
+    LEGEND_GENERATED: 'Legend generated.'
+};
+
+// UI element references
+/** @type {HTMLElement} The loading indicator element */
+let loadingIndicator;
+/** @type {HTMLElement} The error message element */
+let errorMessage;
+
+
+/** @type {HTMLElement} The legend content element */
+let legendContent;
+/** @type {HTMLElement} The info content element */
+let infoContent;
+
+/** @type {HTMLElement} The statistics content element */
 const statsContent = document.getElementById(config.ui.statsPanelId);
+/** @type {HTMLElement} The labels content element */
 const labelsContent = document.getElementById('labels-content');
+/** @type {HTMLElement} The reload button element */
 const reloadButton = document.getElementById(config.ui.reloadButtonId);
 
 // --- Loading and Error UI Elements ---
 let loadingOverlay;
 let errorToast;
-
-// --- Initialization ---
+/**
+ * Initializes the UI Manager
+ * Sets up UI elements and event listeners
+ */
 export function initUIManager(graphData, reloadCallback) {
-    console.log("Initializing UI Manager...");
-    if (!infoContent || !legendContent || !statsContent || !reloadButton) {
-        console.error("One or more UI elements not found!");
-        return;
-    }
+    console.log(LOG_MESSAGES.INITIALIZING);
 
+    // Get UI elements
+    loadingIndicator = document.getElementById('loading-indicator');
+    errorMessage = document.getElementById('error-message');
+    legendContent = document.getElementById('legend-content');
+    infoContent = document.getElementById('info-content');
+    
+    // Validate UI elements
+    if (!loadingIndicator) console.error(ERRORS.CONTAINER_NOT_FOUND, 'loading-indicator');
+    if (!errorMessage) console.error(ERRORS.CONTAINER_NOT_FOUND, 'error-message');
+    if (!statsContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'stats-content');
+    if (!legendContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'legend-content');
+    if (!infoContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'info-content');
+    if (!labelsContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'labels-content');
     // Create loading overlay if it doesn't exist
     createLoadingOverlay();
-    
+
     // Create error toast if it doesn't exist
     createErrorToast();
 
-    // Initial state
+
     infoContent.innerHTML = 'Select a node or edge to see details.';
     updateStats(graphData);
     generateLegend(graphData);
     initLabelControls();
-
-    // Setup event listeners
     reloadButton.addEventListener('click', () => {
         console.log("Reload button clicked.");
         if (reloadCallback) {
@@ -43,10 +82,9 @@ export function initUIManager(graphData, reloadCallback) {
         }
     });
 
-    console.log("UI Manager Initialized.");
+    console.log(LOG_MESSAGES.INITIALIZED);
 }
 
-// --- Loading Indicator Functions ---
 function createLoadingOverlay() {
     // Create only if it doesn't exist
     if (!loadingOverlay) {
@@ -110,6 +148,9 @@ export function showLoadingIndicator(message = "Loading...") {
     loadingOverlay.style.display = 'flex';
 }
 
+/**
+ * Hides the loading indicator
+ */
 export function hideLoadingIndicator() {
     if (loadingOverlay) {
         loadingOverlay.style.display = 'none';
@@ -182,26 +223,95 @@ export function hideErrorMessage() {
     }
 }
 
-// --- Update Functions ---
 
-// Update the statistics panel
+
+/**
+ * Updates the statistics panel with graph data
+ * @param {Object} graphData - The graph data to display statistics for
+ */
 export function updateStats(graphData) {
-    if (!statsContent || !graphData) return;
-    const numNodes = graphData.nodes?.length || 0;
-    const numLinks = graphData.links?.length || 0;
-    statsContent.innerHTML = `
-        <p>Nodes: ${numNodes}</p>
-        <p>Relationships: ${numLinks}</p>
+    console.log(LOG_MESSAGES.UPDATING_STATS);
+    
+    if (!statsContent) {
+        console.error(ERRORS.ELEMENT_NOT_FOUND, 'statsContent');
+        return;
+    }
+
+    if (!graphData || !graphData.nodes || !graphData.links) {
+        console.warn(ERRORS.NO_DATA_PROVIDED);
+        return;
+    }
+
+    // Calculate statistics
+    const nodeCount = graphData.nodes.length;
+    const linkCount = graphData.links.length;
+    
+    // Count nodes by type
+    const nodeTypes = new Map();
+    graphData.nodes.forEach(node => {
+        const type = node.type || 'default';
+        nodeTypes.set(type, (nodeTypes.get(type) || 0) + 1);
+    });
+
+    // Count links by label
+    const linkLabels = new Map();
+    graphData.links.forEach(link => {
+        const label = link.label || 'default';
+        linkLabels.set(label, (linkLabels.get(label) || 0) + 1);
+    });
+
+    // Generate HTML content
+    let htmlContent = `
+        <h3>Graph Statistics</h3>
+        <p><strong>Total Nodes:</strong> ${nodeCount}</p>
+        <p><strong>Total Links:</strong> ${linkCount}</p>
+        
+        <h4>Nodes by Type</h4>
+        <ul>
     `;
+
+    // Add node type statistics
+    nodeTypes.forEach((count, type) => {
+        htmlContent += `<li><strong>${type}:</strong> ${count}</li>`;
+    });
+
+    htmlContent += `
+        </ul>
+        
+        <h4>Links by Label</h4>
+        <ul>
+    `;
+
+    // Add link label statistics
+    linkLabels.forEach((count, label) => {
+        htmlContent += `<li><strong>${label}:</strong> ${count}</li>`;
+    });
+
+    htmlContent += '</ul>';
+
+    // Update the stats content
+    statsContent.innerHTML = htmlContent;
+
+    console.log(LOG_MESSAGES.STATS_UPDATED);
 }
 
-// Generate the legend based on node types and colors in config
+/**
+ * Generates the legend for node types
+ * @param {Object} graphData - The graph data to generate the legend from
+ */
 export function generateLegend(graphData) {
-    if (!legendContent || !graphData || !graphData.nodes) return;
+    console.log(LOG_MESSAGES.GENERATING_LEGEND);
+    
+    if (!legendContent) {
+        console.error(ERRORS.ELEMENT_NOT_FOUND, 'legendContent');
+        return;
+    }
 
-    // Initialize filter manager with current graph data
+    if (!graphData || !graphData.nodes) {
+        console.warn(ERRORS.NO_LEGEND_DATA);
+        return;
+    }
     filterManager.initFromGraphData(graphData);
-
     // Clear existing legend
     legendContent.innerHTML = '';
 
@@ -218,7 +328,7 @@ export function generateLegend(graphData) {
     selectAllContainer.appendChild(selectAllButton);
     legendContent.appendChild(selectAllContainer);
 
-    // Get node counts by type
+    // Count nodes by type
     const nodeCounts = new Map();
     graphData.nodes.forEach(node => {
         const type = node.type || 'default';
@@ -227,10 +337,9 @@ export function generateLegend(graphData) {
 
     // Get all type-color mappings from the color manager
     const typeColorMappings = getTypeColorMappings();
-
     // Create legend items for each node type
     const nodeTypes = new Set(graphData.nodes.map(node => node.type || 'default'));
-    nodeTypes.forEach(type => {
+        nodeTypes.forEach(type => {
         const color = getNodeColor(type);
         const count = nodeCounts.get(type) || 0;
         const isVisible = filterManager.isTypeVisible(type);
@@ -309,9 +418,15 @@ export function generateLegend(graphData) {
         const allVisible = Object.values(filterState).every(v => v);
         selectAllButton.textContent = allVisible ? 'Select All' : 'Deselect All';
     });
+
+    console.log(LOG_MESSAGES.LEGEND_GENERATED);
 }
 
-// Update the info panel with details of the selected item (node or link)
+/**
+ * Updates the info panel with details of the selected item
+ * @param {Object} item - The selected item (node or link)
+ * @param {string} itemType - The type of item ('node' or 'link')
+ */
 export function updateInfoPanel(item, itemType) {
     if (!infoContent || !item) {
         infoContent.innerHTML = 'Select a node or edge to see details.';
@@ -334,7 +449,7 @@ export function updateInfoPanel(item, itemType) {
             htmlContent += `</ul>`;
         }
 
-        // Display other properties (excluding internal ones like id, vx, vy, vz, index)
+        // Display other properties (excluding internal ones)
         htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
         let hasOtherProps = false;
         for (const key in item) {
@@ -348,11 +463,9 @@ export function updateInfoPanel(item, itemType) {
         }
         htmlContent += `</ul>`;
 
-        // TODO: Add Incoming/Outgoing Edges (requires graphData access or passing it in)
-
     } else if (itemType === 'link') {
         htmlContent += `<h3>Relationship Details</h3>`;
-        htmlContent += `<p><strong>From:</strong> ${item.source.name || item.source.id}</p>`; // Links usually have resolved objects
+        htmlContent += `<p><strong>From:</strong> ${item.source.name || item.source.id}</p>`;
         htmlContent += `<p><strong>To:</strong> ${item.target.name || item.target.id}</p>`;
         htmlContent += `<p><strong>Label:</strong> ${item.label || 'N/A'}</p>`;
 
@@ -376,7 +489,9 @@ export function updateInfoPanel(item, itemType) {
     infoContent.innerHTML = htmlContent;
 }
 
-// Initialize label controls
+/**
+ * Initializes the label controls
+ */
 function initLabelControls() {
     if (!labelsContent) return;
 
@@ -402,38 +517,11 @@ function initLabelControls() {
     nodeLabelsControl.appendChild(nodeLabelsLabel);
     nodeLabelsControl.appendChild(nodeLabelsTooltip);
     
-    // Create link labels control
-    // const linkLabelsControl = document.createElement('div');
-    // linkLabelsControl.className = 'label-control';
-    
-    // const linkLabelsCheckbox = document.createElement('input');
-    // linkLabelsCheckbox.type = 'checkbox';
-    // linkLabelsCheckbox.id = 'link-labels-checkbox';
-    // linkLabelsCheckbox.checked = labelManager.getLabelState().linkLabelsVisible;
-    
-    // const linkLabelsLabel = document.createElement('label');
-    // linkLabelsLabel.htmlFor = 'link-labels-checkbox';
-    // linkLabelsLabel.textContent = 'Link Labels';
-    
-    // const linkLabelsTooltip = document.createElement('span');
-    // linkLabelsTooltip.className = 'tooltip';
-    // linkLabelsTooltip.textContent = '?';
-    // linkLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all links');
-    
-    // linkLabelsControl.appendChild(linkLabelsCheckbox);
-    // linkLabelsControl.appendChild(linkLabelsLabel);
-    // linkLabelsControl.appendChild(linkLabelsTooltip);
-    
     // Add event listeners
     nodeLabelsCheckbox.addEventListener('change', (e) => {
         labelManager.setNodeLabelsVisible(e.target.checked);
     });
     
-    // linkLabelsCheckbox.addEventListener('change', (e) => {
-    //     labelManager.setLinkLabelsVisible(e.target.checked);
-    // });
-    
     // Add controls to the panel
     labelsContent.appendChild(nodeLabelsControl);
-    // labelsContent.appendChild(linkLabelsControl);
 }
