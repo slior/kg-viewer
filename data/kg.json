@@ -57,6 +57,13 @@
       "insights": []
     },
     {
+      "id": "js/labelManager.js",
+      "name": "labelManager.js",
+      "type": "file/js",
+      "description": "Manages visibility state of node and link labels in the graph",
+      "insights": []
+    },
+    {
       "id": "css/style.css",
       "name": "style.css",
       "type": "file/css",
@@ -206,6 +213,11 @@
       "label": "imports"
     },
     {
+      "source": "js/graphVisualization.js",
+      "target": "js/labelManager.js",
+      "label": "imports"
+    },
+    {
       "source": "js/uiManager.js",
       "target": "js/config.js",
       "label": "imports"
@@ -221,6 +233,11 @@
       "label": "imports"
     },
     {
+      "source": "js/uiManager.js",
+      "target": "js/labelManager.js",
+      "label": "imports"
+    },
+    {
       "source": "js/filterManager.js",
       "target": "js/config.js",
       "label": "imports"
@@ -228,6 +245,11 @@
     {
       "source": "js/config.js",
       "target": "js/colorManager.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/labelManager.js",
+      "target": "js/config.js",
       "label": "imports"
     },
     {
