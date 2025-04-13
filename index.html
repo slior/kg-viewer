@@ -15,13 +15,17 @@
     </script>
 </head>
 <body>
-    <div id="loading-indicator" style="display: none;">Loading...</div>
+    <div id="loading-indicator" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-message">Loading...</div>
+    </div>
     <div id="error-message" class="error-toast" style="display: none;"></div>
+
     <div id="graph-container"></div>
 
     <div id="ui-panel">
         <div id="info-panel">
-            <h2>Selected Item Details</h2>
+            <h2>Item Details</h2>
             <div id="info-content">Select a node or edge to see details.</div>
         </div>
         <div id="legend-panel">

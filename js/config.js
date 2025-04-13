@@ -118,7 +118,7 @@ export const config = {
  * @returns {string} The color code for the node type
  */
 export function getNodeColor(nodeType) {
-    if (!nodeType) {
+    if (!nodeType || nodeType === 'default') {
         return config.visualization.nodeColors['default'];
     }
     return getColorForType(nodeType);

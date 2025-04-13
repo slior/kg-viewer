@@ -150,6 +150,10 @@ body {
     display: none;
 }
 
+.error-toast.show {
+    opacity: 1;
+}
+
 /* Style for label controls */
 .label-control {
     display: flex;

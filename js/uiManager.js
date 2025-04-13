@@ -2,7 +2,6 @@
 import { config, getNodeColor } from './config.js';
 import { filterManager } from './filterManager.js';
 import { labelManager } from './labelManager.js';
-import { getTypeColorMappings } from './colorManager.js';
 
 // Error message constants
 const ERRORS = {
@@ -23,11 +22,6 @@ const LOG_MESSAGES = {
 };
 
 // UI element references
-/** @type {HTMLElement} The loading indicator element */
-let loadingIndicator;
-/** @type {HTMLElement} The error message element */
-let errorMessage;
-
 
 /** @type {HTMLElement} The legend content element */
 let legendContent;
@@ -42,8 +36,11 @@ const labelsContent = document.getElementById('labels-content');
 const reloadButton = document.getElementById(config.ui.reloadButtonId);
 
 // --- Loading and Error UI Elements ---
-let loadingOverlay;
-let errorToast;
+/** @type {HTMLElement} The loading indicator element */
+const loadingOverlay = document.getElementById('loading-indicator');
+/** @type {HTMLElement} The error message element */
+const errorToast = document.getElementById('error-message');
+
 /**
  * Initializes the UI Manager
  * Sets up UI elements and event listeners
@@ -52,24 +49,17 @@ export function initUIManager(graphData, reloadCallback) {
     console.log(LOG_MESSAGES.INITIALIZING);
 
     // Get UI elements
-    loadingIndicator = document.getElementById('loading-indicator');
-    errorMessage = document.getElementById('error-message');
     legendContent = document.getElementById('legend-content');
     infoContent = document.getElementById('info-content');
     
     // Validate UI elements
-    if (!loadingIndicator) console.error(ERRORS.CONTAINER_NOT_FOUND, 'loading-indicator');
-    if (!errorMessage) console.error(ERRORS.CONTAINER_NOT_FOUND, 'error-message');
+    if (!loadingOverlay) console.error(ERRORS.CONTAINER_NOT_FOUND, 'loading-indicator');
+    if (!errorToast) console.error(ERRORS.CONTAINER_NOT_FOUND, 'error-message');
     if (!statsContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'stats-content');
     if (!legendContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'legend-content');
     if (!infoContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'info-content');
     if (!labelsContent) console.error(ERRORS.CONTAINER_NOT_FOUND, 'labels-content');
-    // Create loading overlay if it doesn't exist
-    createLoadingOverlay();
-
-    // Create error toast if it doesn't exist
-    createErrorToast();
-
+  
 
     infoContent.innerHTML = 'Select a node or edge to see details.';
     updateStats(graphData);
@@ -85,55 +75,6 @@ export function initUIManager(graphData, reloadCallback) {
     console.log(LOG_MESSAGES.INITIALIZED);
 }
 
-function createLoadingOverlay() {
-    // Create only if it doesn't exist
-    if (!loadingOverlay) {
-        loadingOverlay = document.createElement('div');
-        loadingOverlay.className = 'loading-overlay';
-        loadingOverlay.style.display = 'none';
-        loadingOverlay.innerHTML = `
-            <div class="loading-spinner"></div>
-            <div class="loading-message">Loading...</div>
-        `;
-        document.body.appendChild(loadingOverlay);
-        
-        // Add CSS for loading overlay if not already in the page
-        const style = document.createElement('style');
-        style.textContent = `
-            .loading-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 1000;
-            }
-            .loading-spinner {
-                border: 5px solid rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                border-top: 5px solid #fff;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s linear infinite;
-            }
-            .loading-message {
-                color: white;
-                margin-top: 20px;
-                font-size: 18px;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
 
 export function showLoadingIndicator(message = "Loading...") {
     if (!loadingOverlay) {
@@ -158,39 +99,12 @@ export function hideLoadingIndicator() {
 }
 
 // --- Error Message Functions ---
-function createErrorToast() {
-    if (!errorToast) {
-        errorToast = document.createElement('div');
-        errorToast.className = 'error-toast';
-        errorToast.style.display = 'none';
-        document.body.appendChild(errorToast);
-        
-        // Add CSS for error toast if not already in the page
-        const style = document.createElement('style');
-        style.textContent = `
-            .error-toast {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background-color: #f44336;
-                color: white;
-                padding: 16px;
-                border-radius: 4px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-                z-index: 1001;
-                max-width: 350px;
-                word-wrap: break-word;
-                opacity: 0;
-                transition: opacity 0.3s;
-            }
-            .error-toast.show {
-                opacity: 1;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
 
+/**
+ * Shows an error message toast notification
+ * @param {string} message - The error message to display
+ * @param {number} [duration=5000] - How long to show the message in milliseconds. If 0, message won't auto-hide
+ */
 export function showErrorMessage(message, duration = 5000) {
     if (!errorToast) {
         createErrorToast();
@@ -212,6 +126,9 @@ export function showErrorMessage(message, duration = 5000) {
     }
 }
 
+/**
+ * Hides the error message toast notification
+ */
 export function hideErrorMessage() {
     if (errorToast) {
         errorToast.classList.remove('show');
@@ -246,12 +163,7 @@ export function updateStats(graphData) {
     const nodeCount = graphData.nodes.length;
     const linkCount = graphData.links.length;
     
-    // Count nodes by type
-    const nodeTypes = new Map();
-    graphData.nodes.forEach(node => {
-        const type = node.type || 'default';
-        nodeTypes.set(type, (nodeTypes.get(type) || 0) + 1);
-    });
+    const nodeTypes = countNodesByType(graphData);
 
     // Count links by label
     const linkLabels = new Map();
@@ -295,6 +207,66 @@ export function updateStats(graphData) {
     console.log(LOG_MESSAGES.STATS_UPDATED);
 }
 
+function countNodesByType(graphData) {
+    const nodeCounts = new Map();
+    graphData.nodes.forEach(node => {
+        const type = node.type || 'default';
+        nodeCounts.set(type, (nodeCounts.get(type) || 0) + 1);
+    });
+    return nodeCounts;
+}
+
+
+function createSelectAllButton() {
+    const selectAllContainer = document.createElement('div');
+    selectAllContainer.className = 'legend-select-all';
+    const selectAllButton = document.createElement('button');
+    selectAllButton.textContent = 'Deselect All';
+    selectAllButton.addEventListener('click', () => {
+        const allVisible = Array.from(filterManager.filterState.values()).every(v => v);
+        filterManager.setAllVisibility(!allVisible);
+        selectAllButton.textContent = allVisible ? 'Select All' : 'Deselect All';
+    });
+    selectAllContainer.appendChild(selectAllButton);
+    legendContent.appendChild(selectAllContainer);
+    return selectAllButton;
+}
+
+function createNodeLegendItem(type, nodeCounts)
+{
+    const color = getNodeColor(type);
+    const count = nodeCounts.get(type) || 0;
+    const isVisible = filterManager.isTypeVisible(type);
+
+    const legendItem = document.createElement('div');
+    legendItem.className = 'legend-item';
+    
+    // Create checkbox
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = isVisible;
+    checkbox.addEventListener('change', () => {
+        filterManager.setTypeVisibility(type, checkbox.checked);
+    });
+
+    // Create color box
+    const colorBox = document.createElement('span');
+    colorBox.className = 'legend-color-box';
+    colorBox.style.backgroundColor = color;
+
+    // Create type label with count
+    const label = document.createElement('span');
+    label.className = 'legend-label';
+    label.textContent = `${type} (${count})`;
+
+    // Assemble the legend item
+    legendItem.appendChild(checkbox);
+    legendItem.appendChild(colorBox);
+    legendItem.appendChild(label);
+    legendContent.appendChild(legendItem);
+}
+
+
 /**
  * Generates the legend for node types
  * @param {Object} graphData - The graph data to generate the legend from
@@ -312,98 +284,23 @@ export function generateLegend(graphData) {
         return;
     }
     filterManager.initFromGraphData(graphData);
-    // Clear existing legend
-    legendContent.innerHTML = '';
+    
+    legendContent.innerHTML = ''; // Clear existing legend
 
-    // Add Select All button
-    const selectAllContainer = document.createElement('div');
-    selectAllContainer.className = 'legend-select-all';
-    const selectAllButton = document.createElement('button');
-    selectAllButton.textContent = 'Select All';
-    selectAllButton.addEventListener('click', () => {
-        const allVisible = Array.from(filterManager.filterState.values()).every(v => v);
-        filterManager.setAllVisibility(!allVisible);
-        selectAllButton.textContent = allVisible ? 'Select All' : 'Deselect All';
-    });
-    selectAllContainer.appendChild(selectAllButton);
-    legendContent.appendChild(selectAllContainer);
+    const selectAllButton = createSelectAllButton();
 
     // Count nodes by type
-    const nodeCounts = new Map();
-    graphData.nodes.forEach(node => {
-        const type = node.type || 'default';
-        nodeCounts.set(type, (nodeCounts.get(type) || 0) + 1);
-    });
-
-    // Get all type-color mappings from the color manager
-    const typeColorMappings = getTypeColorMappings();
+    const nodeCounts = countNodesByType(graphData);
+    
     // Create legend items for each node type
     const nodeTypes = new Set(graphData.nodes.map(node => node.type || 'default'));
         nodeTypes.forEach(type => {
-        const color = getNodeColor(type);
-        const count = nodeCounts.get(type) || 0;
-        const isVisible = filterManager.isTypeVisible(type);
-
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        
-        // Create checkbox
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = isVisible;
-        checkbox.addEventListener('change', () => {
-            filterManager.setTypeVisibility(type, checkbox.checked);
-        });
-
-        // Create color box
-        const colorBox = document.createElement('span');
-        colorBox.className = 'legend-color-box';
-        colorBox.style.backgroundColor = color;
-
-        // Create type label with count
-        const label = document.createElement('span');
-        label.className = 'legend-label';
-        label.textContent = `${type} (${count})`;
-
-        // Assemble the legend item
-        legendItem.appendChild(checkbox);
-        legendItem.appendChild(colorBox);
-        legendItem.appendChild(label);
-        legendContent.appendChild(legendItem);
+            createNodeLegendItem(type,nodeCounts);
     });
 
     // Add default color if not already present and if default exists in config
     if (!nodeTypes.has('default') && config.visualization.nodeColors['default']) {
-        const color = config.visualization.nodeColors['default'];
-        const count = nodeCounts.get('default') || 0;
-        const isVisible = filterManager.isTypeVisible('default');
-
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        
-        // Create checkbox
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = isVisible;
-        checkbox.addEventListener('change', () => {
-            filterManager.setTypeVisibility('default', checkbox.checked);
-        });
-
-        // Create color box
-        const colorBox = document.createElement('span');
-        colorBox.className = 'legend-color-box';
-        colorBox.style.backgroundColor = color;
-
-        // Create type label with count
-        const label = document.createElement('span');
-        label.className = 'legend-label';
-        label.textContent = `default (${count})`;
-
-        // Assemble the legend item
-        legendItem.appendChild(checkbox);
-        legendItem.appendChild(colorBox);
-        legendItem.appendChild(label);
-        legendContent.appendChild(legendItem);
+        createNodeLegendItem('default',nodeCounts);
     }
 
     // Add listener for filter state changes to update checkboxes
@@ -422,68 +319,85 @@ export function generateLegend(graphData) {
     console.log(LOG_MESSAGES.LEGEND_GENERATED);
 }
 
+function nodeInfoItemContent(item)
+{
+    let htmlContent = '';
+    htmlContent += `<h3>Node Details</h3>`;
+    htmlContent += `<p><strong>Name:</strong> ${item.name || item.id}</p>`;
+    htmlContent += `<p><strong>Type:</strong> ${item.type || 'N/A'}</p>`;
+
+    // Display insights if available
+    if (item.insights && item.insights.length > 0) {
+        htmlContent += `<p><strong>Insights:</strong></p><ul>`;
+        item.insights.forEach(insight => {
+            htmlContent += `<li>${insight}</li>`;
+        });
+        htmlContent += `</ul>`;
+    }
+
+    // Display other properties (excluding internal ones)
+    htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
+    let hasOtherProps = false;
+    for (const key in item) {
+        if (Object.hasOwnProperty.call(item, key) && !['id', 'name', 'type', 'insights', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__threeObj'].includes(key)) {
+            htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
+            hasOtherProps = true;
+        }
+    }
+    if (!hasOtherProps) {
+        htmlContent += `<li>None</li>`;
+    }
+    htmlContent += `</ul>`;
+    return htmlContent;
+}
+
+function linkInfoItemContent(item)
+{
+    let htmlContent = '';
+    htmlContent += `<h3>Relationship Details</h3>`;
+    htmlContent += `<p><strong>From:</strong> ${item.source.name || item.source.id}</p>`;
+    htmlContent += `<p><strong>To:</strong> ${item.target.name || item.target.id}</p>`;
+    htmlContent += `<p><strong>Label:</strong> ${item.label || 'N/A'}</p>`;
+
+    // Display other properties
+    htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
+    let hasOtherProps = false;
+    for (const key in item) {
+         if (Object.hasOwnProperty.call(item, key) && !['source', 'target', 'label', 'index', '__lineObj', '__arrowObj', '__particlesObj','__curve'].includes(key)) {
+            htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
+            hasOtherProps = true;
+        }
+    }
+    if (!hasOtherProps) {
+        htmlContent += `<li>None</li>`;
+    }
+    htmlContent += `</ul>`;
+    return htmlContent;
+}
+
 /**
  * Updates the info panel with details of the selected item
  * @param {Object} item - The selected item (node or link)
  * @param {string} itemType - The type of item ('node' or 'link')
  */
 export function updateInfoPanel(item, itemType) {
+    const NO_SELECTION_MESSAGE = 'Select a node or edge to see details.';   
     if (!infoContent || !item) {
-        infoContent.innerHTML = 'Select a node or edge to see details.';
+        infoContent.innerHTML = NO_SELECTION_MESSAGE;
         return;
     }
 
     let htmlContent = '';
 
-    if (itemType === 'node') {
-        htmlContent += `<h3>Node Details</h3>`;
-        htmlContent += `<p><strong>Name:</strong> ${item.name || item.id}</p>`;
-        htmlContent += `<p><strong>Type:</strong> ${item.type || 'N/A'}</p>`;
-
-        // Display insights if available
-        if (item.insights && item.insights.length > 0) {
-            htmlContent += `<p><strong>Insights:</strong></p><ul>`;
-            item.insights.forEach(insight => {
-                htmlContent += `<li>${insight}</li>`;
-            });
-            htmlContent += `</ul>`;
-        }
-
-        // Display other properties (excluding internal ones)
-        htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
-        let hasOtherProps = false;
-        for (const key in item) {
-            if (Object.hasOwnProperty.call(item, key) && !['id', 'name', 'type', 'insights', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__threeObj'].includes(key)) {
-                htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
-                hasOtherProps = true;
-            }
-        }
-        if (!hasOtherProps) {
-            htmlContent += `<li>None</li>`;
-        }
-        htmlContent += `</ul>`;
-
-    } else if (itemType === 'link') {
-        htmlContent += `<h3>Relationship Details</h3>`;
-        htmlContent += `<p><strong>From:</strong> ${item.source.name || item.source.id}</p>`;
-        htmlContent += `<p><strong>To:</strong> ${item.target.name || item.target.id}</p>`;
-        htmlContent += `<p><strong>Label:</strong> ${item.label || 'N/A'}</p>`;
-
-        // Display other properties
-        htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
-        let hasOtherProps = false;
-        for (const key in item) {
-             if (Object.hasOwnProperty.call(item, key) && !['source', 'target', 'label', 'index', '__lineObj', '__arrowObj', '__particlesObj'].includes(key)) {
-                htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
-                hasOtherProps = true;
-            }
-        }
-        if (!hasOtherProps) {
-            htmlContent += `<li>None</li>`;
-        }
-        htmlContent += `</ul>`;
-    } else {
-        htmlContent = 'Select a node or edge to see details.';
+    switch (itemType) {
+        case 'node':
+            htmlContent += nodeInfoItemContent(item);
+            break;
+        case 'link':
+            htmlContent += linkInfoItemContent(item);
+            break;
+        default:
+            htmlContent = NO_SELECTION_MESSAGE;
     }
 
     infoContent.innerHTML = htmlContent;
@@ -506,16 +420,11 @@ function initLabelControls() {
     
     const nodeLabelsLabel = document.createElement('label');
     nodeLabelsLabel.htmlFor = 'node-labels-checkbox';
-    nodeLabelsLabel.textContent = 'Node Labels';
-    
-    const nodeLabelsTooltip = document.createElement('span');
-    nodeLabelsTooltip.className = 'tooltip';
-    nodeLabelsTooltip.textContent = '?';
-    nodeLabelsTooltip.setAttribute('data-tooltip', 'Show or hide labels for all nodes');
+    nodeLabelsLabel.textContent = 'Show Node Labels';
+    nodeLabelsLabel.setAttribute('title', 'Show or hide labels for all nodes');
     
     nodeLabelsControl.appendChild(nodeLabelsCheckbox);
     nodeLabelsControl.appendChild(nodeLabelsLabel);
-    nodeLabelsControl.appendChild(nodeLabelsTooltip);
     
     // Add event listeners
     nodeLabelsCheckbox.addEventListener('change', (e) => {
