@@ -39,6 +39,13 @@ To run the application locally:
    http://localhost:8001
    ```
 
+## Documentation
+
+The following documentation files provide detailed information about the application's architecture and behavior:
+
+- [Application Initialization Sequence](docs/init_sequence.md) - showing the initialization flow of the application.
+- [Legend Checkbox Click Flow](docs/legend_click_flow.md) - showing the flow when a user clicks on a checkbox in the legend.
+
 ## Project Structure
 
 - `index.html` - Main entry point of the application
