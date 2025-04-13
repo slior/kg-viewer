@@ -271,25 +271,21 @@ export async function loadDataAndRender(data) {
     }
 
     try {
-        // If data is not provided, use default behavior
-        if (!data) {
+        
+        if (!data) { // If data is not provided, use default behavior
             console.warn(ERRORS.NO_DATA_PROVIDED);
             return;
         }
         
-        // Store the graph data locally
-        graphData = data;
+       
+        graphData = data;  // Store the graph data locally
         
-        // Feed data to the force-graph
-        graph.graphData(graphData);
+        graph.graphData(graphData); // Feed data to the force-graph
 
-        // Apply initial filter state
         applyFilterState(filterManager.getFilterState());
         
-        // Apply initial label state
         const labelState = labelManager.getLabelState();
         updateNodeLabels(labelState.nodeLabelsVisible);
-        // updateLinkLabels(labelState.linkLabelsVisible);
 
         // Setup initial camera position after graph data is loaded
         // Use timeout to allow layout to start settling
@@ -350,24 +346,26 @@ function applyFilterState(filterState) {
         }
     });
 
-    // Update link visibility based on connected nodes
+    
     if (graphData.links) {
-        graphData.links.forEach(link => {
-            const sourceType = link.source.type || 'default';
-            const targetType = link.target.type || 'default';
-            const isVisible = (filterState[sourceType] ?? config.filter.defaultVisible) && 
-                             (filterState[targetType] ?? config.filter.defaultVisible);
-            
-            if (link.__lineObj) link.__lineObj.visible = isVisible;
-            if (link.__arrowObj) link.__arrowObj.visible = isVisible;
-            if (link.__particlesObj) link.__particlesObj.visible = isVisible;
-        });
+        graphData.links.forEach(link => updateLinkVisibility(link, filterState));
     }
 
-    // Update the graph
     graph.graphData(graphData);
 }
 
+// Update link visibility based on connected nodes
+function updateLinkVisibility(link, filterState)
+{ 
+    const sourceType = link.source.type || 'default';
+    const targetType = link.target.type || 'default';
+    const isVisible = (filterState[sourceType] ?? config.filter.defaultVisible) && 
+                        (filterState[targetType] ?? config.filter.defaultVisible);
+    
+    if (link.__lineObj) link.__lineObj.visible = isVisible;
+    if (link.__arrowObj) link.__arrowObj.visible = isVisible;
+    if (link.__particlesObj) link.__particlesObj.visible = isVisible;
+}
 /**
  * Handles label state changes
  * @param {Object} labelState - The new label state
@@ -375,11 +373,8 @@ function applyFilterState(filterState) {
 function handleLabelStateChange(labelState) {
     if (!graph) return;
 
-    // Update node labels
     updateNodeLabels(labelState.nodeLabelsVisible);
     
-    // Update link labels
-    // updateLinkLabels(labelState.linkLabelsVisible);
 }
 
 /**
@@ -390,48 +385,28 @@ function updateNodeLabels(visible) {
     if (!graph || !graphData || !graphData.nodes) return;
     
     graphData.nodes.forEach(node => {
-        if (node.__threeObj) {
-            // Find the label sprite (should be the second child of the group)
-            const labelSprite = node.__threeObj.children[1];
-            if (labelSprite && labelSprite instanceof SpriteText) {
-                labelSprite.visible = visible;
-            } else if (visible) {
-                // If label doesn't exist but should be visible, create it
-                const sprite = new SpriteText(node.name || node.id);
-                sprite.material.depthWrite = false;
-                sprite.color = 'white';
-                sprite.textHeight = 4;
-                sprite.position.set(0, config.graph.nodeSize + 2, 0);
-                node.__threeObj.add(sprite);
-            }
-        }
+        updateNodeLabelVisibility(node, visible);
     });
     
-    // Update the graph to apply changes
-    graph.graphData(graphData);
+    graph.graphData(graphData); // Update the graph to apply changes
 }
 
-/**
- * Updates the visibility of link labels
- * @param {boolean} visible - Whether labels should be visible
- */
-function updateLinkLabels(visible) {
-    if (!graph || !graphData || !graphData.links) return;
-    
-    // Remove all existing link labels from the scene
-    if (graph.__linkLabels) {
-        graph.__linkLabels.forEach(label => {
-            if (label.parent) {
-                label.parent.remove(label);
-            }
-        });
+function updateNodeLabelVisibility(node, visible) {
+    if (node.__threeObj) {
+        // Find the label sprite (should be the second child of the group)
+        const labelSprite = node.__threeObj.children[1];
+        if (labelSprite && labelSprite instanceof SpriteText) {
+            labelSprite.visible = visible;
+        } else if (visible) {
+            // If label doesn't exist but should be visible, create it
+            const sprite = new SpriteText(node.name || node.id);
+            sprite.material.depthWrite = false;
+            sprite.color = 'white';
+            sprite.textHeight = 4;
+            sprite.position.set(0, config.graph.nodeSize + 2, 0);
+            node.__threeObj.add(sprite);
+        }
     }
-    
-    // Create a new array to store link labels
-    graph.__linkLabels = [];
-    
-    // Update the graph to apply changes
-    graph.graphData(graphData);
 }
 
 /**
@@ -440,10 +415,8 @@ function updateLinkLabels(visible) {
 function animate() {
     requestAnimationFrame(animate);
     
-    // Update controls
     controls.update();
     
-    // Render the scene
     renderer.render(scene, camera);
 }
 
@@ -466,61 +439,3 @@ function onWindowResize() {
         graph.height(graphContainer.offsetHeight);
     }
 }
-
-// Keyboard navigation
-document.addEventListener('keydown', (event) => {
-    if (!controls) return;
-
-    const moveSpeed = (config.camera.controls.moveSpeed / 1000) * 16; // Adjust speed based on typical frame time
-    const ascendSpeed = config.camera.controls.ascendDescendSpeed;
-
-    let moveForward = 0, moveRight = 0, moveUp = 0;
-
-    switch (event.key) {
-        case 'w':
-        case 'ArrowUp':
-            moveForward = -moveSpeed; // Move forward (into the screen)
-            break;
-        case 's':
-        case 'ArrowDown':
-            moveForward = moveSpeed; // Move backward
-            break;
-        case 'a':
-        case 'ArrowLeft':
-            moveRight = -moveSpeed; // Strafe left
-            break;
-        case 'd':
-        case 'ArrowRight':
-            moveRight = moveSpeed; // Strafe right
-            break;
-        case 'PageUp':
-            moveUp = ascendSpeed; // Move up
-            break;
-        case 'PageDown':
-            moveUp = -ascendSpeed; // Move down
-            break;
-    }
-
-    if (moveForward !== 0 || moveRight !== 0 || moveUp !== 0) {
-        // Get camera direction
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-
-        // Get vector pointing right
-        const right = new THREE.Vector3();
-        right.crossVectors(camera.up, cameraDirection).normalize(); // Right = Up x Direction (adjust if needed)
-
-        // Calculate movement vector based on camera orientation
-        const forwardMove = cameraDirection.clone().multiplyScalar(moveForward);
-        const rightMove = right.clone().multiplyScalar(moveRight);
-        const upMove = camera.up.clone().multiplyScalar(moveUp); // Use camera's local up
-
-        const totalMove = new THREE.Vector3().add(forwardMove).add(rightMove).add(upMove);
-
-        // Apply movement to camera position and target (for OrbitControls)
-        camera.position.add(totalMove);
-        controls.target.add(totalMove); // Move the point the camera orbits around
-
-        controls.update(); // Update controls after manual move
-    }
-});
