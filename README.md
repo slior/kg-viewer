@@ -45,6 +45,7 @@ The following documentation files provide detailed information about the applica
 
 - [Application Initialization Sequence](docs/init_sequence.md) - showing the initialization flow of the application.
 - [Legend Checkbox Click Flow](docs/legend_click_flow.md) - showing the flow when a user clicks on a checkbox in the legend.
+- [Load Data Flow](docs/load_data_flow.md) - showing the sequence of data loading and graph updates.
 
 ## Project Structure
 
