@@ -174,6 +174,27 @@
       "type": "file/json",
       "description": "Knowledge graph data for the application",
       "insights": []
+    },
+    {
+      "id": "feature_reading_data",
+      "name": "Reading Data Feature",
+      "type": "feature",
+      "description": "Feature for reading and validating data from a server",
+      "insights": ["docs/features/feature_reading_data.md"]
+    },
+    {
+      "id": "feature_filter_nodes",
+      "name": "Filter Nodes Feature",
+      "type": "feature",
+      "description": "Feature for filtering nodes in the knowledge graph",
+      "insights": ["docs/features/filter_nodes.md"]
+    },
+    {
+      "id": "feature_data_selection",
+      "name": "Data Selection Feature",
+      "type": "feature",
+      "description": "Feature for selecting different data sets to visualize",
+      "insights": ["docs/features/data_selection.md"]
     }
   ],
   "links": [
@@ -296,6 +317,71 @@
       "source": "tests/data-validation-tests.html",
       "target": "tests/test-utils.js",
       "label": "imports"
+    },
+    {
+      "source": "feature_reading_data",
+      "target": "js/config.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_reading_data",
+      "target": "js/data.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_reading_data",
+      "target": "js/main.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_reading_data",
+      "target": "js/graphVisualization.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_reading_data",
+      "target": "js/uiManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_filter_nodes",
+      "target": "js/config.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_filter_nodes",
+      "target": "js/filterManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_filter_nodes",
+      "target": "js/uiManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_filter_nodes",
+      "target": "js/graphVisualization.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_data_selection",
+      "target": "js/config.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_data_selection",
+      "target": "js/data.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_data_selection",
+      "target": "js/main.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_data_selection",
+      "target": "js/uiManager.js",
+      "label": "changed"
     }
   ]
 } 
