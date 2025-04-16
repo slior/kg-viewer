@@ -274,7 +274,39 @@
                     `Validation correctly caught missing insights array: ${error.message}`
                 );
             }
-            
+
+            // Test 8: Directory traversal prevention
+            try {
+                await fetchGraphData('../secret/data');
+                displayTestResult(
+                    "Test 8: Directory traversal prevention", 
+                    false, 
+                    "Expected validation to catch directory traversal attempt but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 8: Directory traversal prevention", 
+                    true, 
+                    `Validation correctly caught directory traversal attempt: ${error.message}`
+                );
+            }
+
+            // Test 9: Empty data set path
+            try {
+                await fetchGraphData('');
+                displayTestResult(
+                    "Test 9: Empty data set path", 
+                    false, 
+                    "Expected validation to catch empty data set path but it didn't"
+                );
+            } catch (error) {
+                displayTestResult(
+                    "Test 9: Empty data set path", 
+                    true, 
+                    `Validation correctly caught empty data set path: ${error.message}`
+                );
+            }
+ 
             // Restore original fetch
             fetchMock.restore();
             

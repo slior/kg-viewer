@@ -21,15 +21,22 @@ const ERRORS = {
 
 /**
  * Fetches graph data from the server with retry capability
+ * @param {string} dataSetPath - The path to the data set
  * @param {number} retryCount - Number of retry attempts remaining
  * @returns {Promise<Object>} The graph data object containing nodes and links
  * @throws {Error} If the server request fails after all retries
  * @throws {Error} If the response is not valid JSON
  * @throws {Error} If the server returns a non-200 status code
  */
-export async function fetchGraphData(retryCount = config.api.retryCount) {
-    const url = `${config.api.apiBaseUrl}${config.api.apiEndpoint}`;
-    
+export async function fetchGraphData(dataSetPath = config.api.defaultDataSet, retryCount = config.api.retryCount) {
+    console.log("Fetching graph data...", dataSetPath);
+    // Validate data set path
+    if (dataSetPath.includes('..')) {
+        throw new Error('Invalid data set path: Directory traversal not allowed');
+    }
+
+    const url = `${config.api.apiBaseUrl}${config.api.apiEndpoint}/${dataSetPath}`;
+    console.log("Fetching graph data from URL:", url);
     // Create AbortController for timeout handling
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.api.fetchTimeout);
@@ -65,7 +72,7 @@ export async function fetchGraphData(retryCount = config.api.retryCount) {
         // Retry logic
         if (retryCount > 0) {
             console.log(`Retrying fetch... (${retryCount} attempts left)`);
-            return fetchGraphData(retryCount - 1);
+            return fetchGraphData(dataSetPath, retryCount - 1);
         }
         
         // If all retries failed, throw the error
@@ -122,11 +129,11 @@ function validateGraphData(data) {
  * @returns {Promise<Object>} The processed graph data
  * @throws {Error} If data fetching or processing fails
  */
-export async function getProcessedData() {
-    console.log("Fetching and processing graph data...");
+export async function getProcessedData(dataSetPath = config.api.defaultDataSet) {
+    console.log("Fetching and processing graph data...", dataSetPath);
     
     try {
-        const graphData = await fetchGraphData();
+        const graphData = await fetchGraphData(dataSetPath);
         
         // Additional processing can be done here if needed
         

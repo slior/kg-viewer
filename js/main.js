@@ -21,7 +21,7 @@ async function initializeApp() {
     try {
         showLoadingIndicator(LOADING_MESSAGE);
         const graphData = await getProcessedData();
-        initUIManager(graphData, reloadGraph);
+        initUIManager(graphData, reloadGraph, loadData);
 
         initGraphVisualization();
         updateStats(graphData);
@@ -45,18 +45,26 @@ async function initializeApp() {
 async function reloadGraph() {
     console.log("Reloading graph...");
     
+    loadData();
+}
+
+async function loadData() {
+    const dataSetInput = document.getElementById('data-set-input');
+    const dataSetPath = dataSetInput.value.trim();
+    console.log("Loading data set:", dataSetPath);
     try {
-        showLoadingIndicator(RELOADING_MESSAGE);
-        const graphData = await getProcessedData();
-        updateStats(graphData);
-        generateLegend(graphData);
-        await loadDataAndRender(graphData);
+        showLoadingIndicator('Loading data set...');
+        const newData = await getProcessedData(dataSetPath);
+        // reloadGraph(newData);
+        updateStats(newData);
+        generateLegend(newData);
+        await loadDataAndRender(newData);
+        console.log("Data set loaded successfully.");
         hideLoadingIndicator();
-        console.log(RELOAD_SUCCESS_MESSAGE);
     } catch (error) {
-        console.error("Failed to reload graph:", error);
+        console.error("Failed to load data set:", error);
         hideLoadingIndicator();
-        showErrorMessage(RELOAD_ERROR_MESSAGE);
+        showErrorMessage(error.message);
     }
 }
 

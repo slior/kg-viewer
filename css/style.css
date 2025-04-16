@@ -215,3 +215,42 @@ body {
     margin-top: -10px;
     border: 2px solid white; /* White border for visibility */
 }
+
+#data-set-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+}
+
+#data-set-container label {
+    color: white;
+    font-weight: bold;
+}
+
+#data-set-input {
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    width: 200px;
+}
+
+#load-data-button {
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#load-data-button:hover {
+    background-color: #45a049;
+}

@@ -45,7 +45,7 @@ const errorToast = document.getElementById('error-message');
  * Initializes the UI Manager
  * Sets up UI elements and event listeners
  */
-export function initUIManager(graphData, reloadCallback) {
+export function initUIManager(graphData, reloadGraph, loadData) {
     console.log(LOG_MESSAGES.INITIALIZING);
 
     // Get UI elements
@@ -67,8 +67,31 @@ export function initUIManager(graphData, reloadCallback) {
     initLabelControls();
     reloadButton.addEventListener('click', () => {
         console.log("Reload button clicked.");
-        if (reloadCallback) {
-            reloadCallback();
+        if (reloadGraph) {
+            reloadGraph();
+        }
+    });
+
+    // Initialize data set selection
+    const dataSetInput = document.getElementById('data-set-input');
+    const loadDataButton = document.getElementById('load-data-button');
+
+    // Set default data set
+    dataSetInput.value = config.api.defaultDataSet;
+
+    // Add event listeners for data set loading
+    loadDataButton.addEventListener('click', async () => {
+        if (loadData) {
+            loadData();
+        }
+    });
+
+    // Add input validation
+    dataSetInput.addEventListener('input', () => {
+        const value = dataSetInput.value;
+        if (value.includes('..')) {
+            showErrorMessage('Invalid path: Directory traversal not allowed');
+            dataSetInput.value = value.replace(/\.\./g, '');
         }
     });
 
