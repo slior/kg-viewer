@@ -8,7 +8,7 @@ const GRAPH_CONSTANTS = {
     LINK_OPACITY: 0.6,
     PARTICLE_WIDTH: 2,
     PARTICLE_SPEED: 0.01,
-    ARROW_LENGTH: 4,
+    ARROW_LENGTH: 3.5,
     ARROW_COLOR: 'rgba(200, 200, 200, 0.8)',
     BACKGROUND_COLOR: 0x111111,
     LABEL_DISTANCE: 150
@@ -17,10 +17,12 @@ const GRAPH_CONSTANTS = {
 // Focus mode constants
 const FOCUS_CONSTANTS = {
     FOCUSED_NODE_COLOR: 0xdddddd, 
+    NEIGHBOR_NODE_COLOR: 0x009999,
     NEIGHBOR_NODE_BORDER_COLOR: 0xbbbbbb, 
     INCOMING_LINK_COLOR: 0x00ff00, // Green
     OUTGOING_LINK_COLOR: 0xff0000, // Red
     DIMMED_NODE_OPACITY: 0.2,
+    DIMMED_NODE_COLOR: 0x333333,
     FOCUS_INDICATOR_COLOR: 'rgba(255, 255, 255, 0.2)',
     FOCUS_INDICATOR_BORDER_COLOR: 'rgba(255, 255, 255, 0.5)'
 };
@@ -50,7 +52,7 @@ const CAMERA_CONSTANTS = {
 const API_CONSTANTS = {
     BASE_URL: 'http://localhost:8001',
     ENDPOINT: '/data',
-    DEFAULT_DATA_SET: 'kg.json',
+    DEFAULT_DATA_SET: 'sample.json',
     TIMEOUT: 10000,
     RETRY_COUNT: 3
 };
@@ -135,5 +137,8 @@ export function getNodeColor(nodeType) {
     if (!nodeType || nodeType === 'default') {
         return config.visualization.nodeColors['default'];
     }
-    return getColorForType(nodeType);
+    let ret = getColorForType(nodeType);
+    console.log("getNodeColor", nodeType, ret);
+    return ret;
+    // return getColorForType(nodeType);
 }

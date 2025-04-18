@@ -39,29 +39,6 @@ if (typeof window !== 'undefined' && !window.process) {
     window.process = { env: {} };
 }
 
-/**
- * Converts a hex color string (#RRGGBB) to a number (0xRRGGBB)
- * @param {string|number} color - The color in hex string format (#RRGGBB) or number format (0xRRGGBB)
- * @returns {number} The color as a number (0xRRGGBB)
- */
-function hexColorToNumber(color) {
-    // If already a number, return as is
-    if (typeof color === 'number') {
-        return color;
-    }
-    
-    // If it's a string, convert it
-    if (typeof color === 'string') {
-        // Remove the # if present
-        const hexString = color.startsWith('#') ? color.substring(1) : color;
-        // Parse the hex string to a number
-        return parseInt(hexString, 16);
-    }
-    
-    // Default fallback
-    return 0x000000;
-}
-
 /** @type {THREE.Scene} The Three.js scene */
 let scene;
 /** @type {THREE.PerspectiveCamera} The Three.js camera */
@@ -145,16 +122,16 @@ export function initGraphVisualization() {
           .nodeThreeObject(node => createNodeObject(node, initialLabelState.nodeLabelsVisible))
           .linkLabel(link => link.label)
           .linkThreeObjectExtend(true)
-          .linkThreeObject(link => createLinkObject(link))
-          .linkPositionUpdate((linkObj, { start, end }) => updateLinkPosition(linkObj, start, end))
           .linkDirectionalArrowLength(config.graph.arrowLength)
-          .linkDirectionalArrowRelPos(1)
+          .linkDirectionalArrowRelPos(1.03)
           .linkDirectionalArrowColor(config.graph.arrowColor)
+          .linkDirectionalParticles(link => isHighlightedLink(link) ? 2 : 0) //"intensity" of particles
+          .linkDirectionalParticleWidth(2) //"width" of particles
           .linkWidth(config.graph.linkWidth)
+          .linkCurvature(0.25)
           .linkOpacity(config.graph.linkOpacity)
           .nodeVal(config.graph.nodeSize)
-          .nodeAutoColorBy('type')
-          .nodeColor(node => getNodeColor(node.type));
+        .nodeColor(node => determineNodeColor(node));
           
         // Configure d3 forces separately to avoid method chaining issues
         graph.d3Force('charge').strength(config.forceGraph.chargeStrength);
@@ -188,6 +165,32 @@ export function initGraphVisualization() {
     console.log(LOG_MESSAGES.INITIALIZED);
 }
 
+function isHighlightedLink(link)
+{
+    const connectionType = nodeFocusManager.getLinkConnectionType(link);
+    return connectionType.isConnected;
+}
+
+function determineNodeColor(node)
+{
+    if (!nodeFocusManager.isFocusModeActive)
+    {
+        return getNodeColor(node.type);
+    }
+    else if (nodeFocusManager.isFocusedNode(node))
+    {
+        return config.focus.FOCUSED_NODE_COLOR;
+    }
+    else if (nodeFocusManager.isNeighborNode(node))
+    {
+        return config.focus.NEIGHBOR_NODE_COLOR;
+    }
+    else
+    {
+        return config.focus.DIMMED_NODE_COLOR;
+    }
+}
+
 /**
  * Creates a Three.js object for a node
  * @param {Object} node - The node data
@@ -201,7 +204,7 @@ function createNodeObject(node, labelsVisible) {
     // Create the node sphere
     const nodeGeometry = new THREE.SphereGeometry(config.graph.nodeSize);
     const nodeMaterial = new THREE.MeshBasicMaterial({ 
-        color: getNodeColor(node.type),
+        color: determineNodeColor(node),
         transparent: true,
         opacity: 0.8
     });
@@ -219,73 +222,6 @@ function createNodeObject(node, labelsVisible) {
     }
     
     return group;
-}
-
-/**
- * Creates a Three.js object for a link
- * @param {Object} link - The link data
- * @returns {THREE.Group} The link object
- */
-function createLinkObject(link) {
-    // Create a group to hold the link
-    const group = new THREE.Group();
-    
-    // Create the link line using CylinderGeometry
-    const linkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
-    const linkMaterial = new THREE.MeshBasicMaterial({ 
-        color: config.graph.arrowColor,
-        // transparent: true,
-        transparent: false,
-        side: THREE.DoubleSide,
-        opacity: config.graph.linkOpacity
-    });
-    const linkMesh = new THREE.Mesh(linkGeometry, linkMaterial);
-    linkMesh.rotation.x = Math.PI / 2; // Rotate to align with link direction
-    group.add(linkMesh);
-    
-    return group;
-}
-
-/**
- * Updates the position and orientation of a link object
- * @param {THREE.Object3D} linkObj - The link object to update
- * @param {Object} start - The start position
- * @param {Object} end - The end position
- */
-function updateLinkPosition(linkObj, start, end) {
-    // Calculate the middle point between start and end
-    const middlePos = {
-        x: start.x + (end.x - start.x) / 2,
-        y: start.y + (end.y - start.y) / 2,
-        z: start.z + (end.z - start.z) / 2
-    };
-    
-    // Position the link object at the middle point
-    linkObj.position.set(middlePos.x, middlePos.y, middlePos.z);
-    
-    // Calculate the direction vector from start to end
-    const direction = new THREE.Vector3(
-        end.x - start.x,
-        end.y - start.y,
-        end.z - start.z
-    );
-    
-    // Calculate the distance between nodes
-    const distance = direction.length();
-    
-    // Scale the link to match the distance between nodes
-    linkObj.scale.set(1, distance, 1);
-    
-    // Normalize the direction vector
-    direction.normalize();
-    
-    // Create a quaternion that rotates from the default cylinder direction (0,1,0) to our desired direction
-    const up = new THREE.Vector3(0, 1, 0);
-    const quaternion = new THREE.Quaternion();
-    quaternion.setFromUnitVectors(up, direction);
-    
-    // Apply the rotation
-    linkObj.quaternion.copy(quaternion);
 }
 
 /**
@@ -500,148 +436,19 @@ function onWindowResize() {
     }
 }
 
-function highlighFocusNode(node,nodeMesh)
-{
-    // Focused node - white color
-    nodeMesh.material.color.setHex(hexColorToNumber(config.focus.FOCUSED_NODE_COLOR));
-    nodeMesh.material.opacity = 1;
-    
-    // Add white border
-    if (!node.__borderMesh) {
-        const borderGeometry = new THREE.SphereGeometry(config.graph.nodeSize + 1, 16, 16);
-        const borderMaterial = new THREE.MeshBasicMaterial({
-            color: config.focus.NEIGHBOR_NODE_BORDER_COLOR,
-            transparent: true,
-            opacity: 0.8,
-            side: THREE.BackSide
-        });
-        node.__borderMesh = new THREE.Mesh(borderGeometry, borderMaterial);
-        node.__threeObj.add(node.__borderMesh);
-    } else {
-        node.__borderMesh.visible = true;
-    }
-}
-
-function highlighNeighborNode(node,nodeMesh)
-{
-    nodeMesh.material.color.setHex(hexColorToNumber(getNodeColor(node.type)));
-                
-    nodeMesh.material.opacity = 0.8;
-    
-    // Add white border
-    if (!node.__borderMesh) {
-        const borderGeometry = new THREE.SphereGeometry(config.graph.nodeSize + 1, 16, 16);
-        const borderMaterial = new THREE.MeshBasicMaterial({
-            color: config.focus.NEIGHBOR_NODE_BORDER_COLOR,
-            transparent: true,
-            opacity: 0.8,
-            side: THREE.BackSide
-        });
-        node.__borderMesh = new THREE.Mesh(borderGeometry, borderMaterial);
-        node.__threeObj.add(node.__borderMesh);
-    } else {
-        node.__borderMesh.visible = true;
-    }
-}
-
-function dimNode(node,nodeMesh)
-{
-    nodeMesh.material.color.setHex(hexColorToNumber(getNodeColor(node.type)));
-    nodeMesh.material.opacity = config.focus.DIMMED_NODE_OPACITY;
-    
-    // Hide border if exists
-    if (node.__borderMesh) {
-        node.__borderMesh.visible = false;
-    }
-}
-
-function highlightLink(linkMesh, isIncoming)
-{
-    console.log("Connection is incoming", isIncoming);
-    console.log(" - Link Mesh", linkMesh);
-    if (isIncoming) {
-        console.log("setting incoming link color", config.focus.INCOMING_LINK_COLOR);
-        linkMesh.material.color.setHex((config.focus.INCOMING_LINK_COLOR));
-        linkMesh.material.needsUpdate = true;
-    } else {
-        console.log("setting outgoing link color", config.focus.OUTGOING_LINK_COLOR);
-        linkMesh.material.color.setHex((config.focus.OUTGOING_LINK_COLOR));
-        linkMesh.material.needsUpdate = true;
-    }
-    linkMesh.material.opacity = 1;
-    linkMesh.material.needsUpdate = true;
-}
-
-function dimLink(linkMesh)
-{
-    linkMesh.material.color.setHex(hexColorToNumber(config.graph.arrowColor));
-    linkMesh.material.opacity = config.focus.DIMMED_NODE_OPACITY;
-    linkMesh.material.needsUpdate = true;
-}
-
 /**
  * Applies focus mode styling to the graph
  */
 function applyFocusMode() {
     if (!graph || !graphData || !graphData.nodes) return;
     
-    // Apply styling to nodes
-    graphData.nodes.forEach(node => {
-        if (node.__threeObj) {
-            // Get the node mesh (first child of the group)
-            const nodeMesh = node.__threeObj.children[0];
-            
-            if (nodeFocusManager.isFocusedNode(node)) {
-                highlighFocusNode(node,nodeMesh);
-            } else if (nodeFocusManager.isNeighborNode(node)) {
-                highlighNeighborNode(node,nodeMesh);
-                
-            } else { // Other nodes - dimmed
-                
-                dimNode(node,nodeMesh);
-            }
-        }
-    });
-    
-    // Apply styling to links
-    if (graphData.links) {
-        graphData.links.forEach(link => {
-            if (link.__lineObj) {
-                // Get the link mesh (first child of the group)
-                const linkMesh = link.__lineObj.children[0];
-                
-                const connectionType = nodeFocusManager.getLinkConnectionType(link);
-                
-                if (connectionType.isConnected) {
-                    highlightLink(linkMesh, connectionType.type === 'incoming');
-                } else { // Other links - dimmed
-                    dimLink(linkMesh);
-                }
-            }
-        });
-    }
+    console.log("Applying focus mode");
+    console.log(" - Focused node:", nodeFocusManager.focusedNode);
+   
+    graph.refresh();
     addFocusIndicator();
 }
 
-function resetNodeColor(node)
-{
-    const nodeMesh = node.__threeObj.children[0];
-    nodeMesh.material.color.setHex(hexColorToNumber(getNodeColor(node.type)));
-    nodeMesh.material.opacity = 1;
-    
-    // Hide border if exists
-    if (node.__borderMesh) {
-        node.__borderMesh.visible = false;
-    }
-}
-
-function resetLinkColor(link)
-{
-    const linkMesh = link.__lineObj.children[0];
-    console.log("Link Mesh", linkMesh);
-    linkMesh.material.color.setHex(hexColorToNumber(config.graph.arrowColor));
-    linkMesh.material.opacity = config.graph.linkOpacity;
-}
 /**
  * Removes focus mode styling from the graph
  */
@@ -649,22 +456,7 @@ function removeFocusMode() {
     console.log("removeFocusMode");
     if (!graph || !graphData || !graphData.nodes) return;
     
-    // Reset node styling
-    graphData.nodes.forEach(node => {
-        if (node.__threeObj) {
-            resetNodeColor(node);
-        }
-    });
-    
-    // Reset link styling
-    if (graphData.links) {
-        graphData.links.forEach(link => {
-            if (link.__lineObj) {
-                resetLinkColor(link);
-            }
-        });
-    }
-    
+    graph.refresh();
     // Remove focus indicator
     removeFocusIndicator();
 }
