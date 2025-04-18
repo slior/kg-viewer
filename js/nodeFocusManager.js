@@ -113,19 +113,13 @@ class NodeFocusManager {
      * @returns {Object} Object with properties indicating if the link is connected and its type
      */
     getLinkConnectionType(link) {
-        if (!this.focusedNode || !link) return { isConnected: false, type: null };
+        if (!this.focusedNode || !link) return { isConnected: false};
         
         // Check if the link is connected to the focused node
         const isOutgoing = (link.source.id === this.focusedNode.id);
         const isIncoming = (link.target.id === this.focusedNode.id);
 
-        if (isOutgoing) {
-            return { isConnected: true, type: 'outgoing' };
-        } else if (isIncoming) {
-            return { isConnected: true, type: 'incoming' };
-        } else {
-            return { isConnected: false, type: null };
-        }
+        return { isConnected: isOutgoing || isIncoming};
     }
 }
 

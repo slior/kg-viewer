@@ -120,6 +120,11 @@ function handleKeyDown(event) {
         // This is done by dispatching a custom event
         const exitFocusEvent = new CustomEvent('exitFocusMode');
         document.dispatchEvent(exitFocusEvent);
+        
+        // Update the info panel to remove the focus mode indicator
+        if (infoContent) {
+            updateInfoPanel(null, 'node');
+        }
     }
 }
 

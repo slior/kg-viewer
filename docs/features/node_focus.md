@@ -94,3 +94,18 @@ Implement the ability to focus on a specific node.
 - Added `hexColorToNumber` utility function to `js/graphVisualization.js` to convert hex color strings to numbers for THREE.js compatibility.
 - Updated all `setHex` calls in the visualization code to use the new utility function, ensuring consistent color handling regardless of input format.
 
+## Edge Rendering Optimization
+- Replaced custom link rendering with ForceGraph3D's built-in particle system for highlighting connected edges
+- Added `isHighlightedLink` function to determine which links should be highlighted based on connection type
+- Implemented `determineNodeColor` function to dynamically set node colors based on focus state
+- Removed custom link object creation and position update functions in favor of built-in ForceGraph3D mechanisms
+- Added link curvature (0.25) for better visual distinction between links
+- Configured directional particles to appear only on highlighted links with appropriate width
+- Simplified focus mode application by using `graph.refresh()` to update the visualization
+- Adjusted arrow position (1.03) for better visual alignment with nodes
+
+## Focus Mode Indicator Fix
+- Fixed issue where the focus mode indicator in the info panel wasn't disappearing when pressing Escape
+- Updated `handleKeyDown` function in `js/uiManager.js` to call `updateInfoPanel` after exiting focus mode
+- Ensured proper cleanup of UI elements when focus mode is exited via keyboard shortcut
+
