@@ -473,20 +473,9 @@ function addFocusIndicator() {
     // Create focus indicator
     const indicator = document.createElement('div');
     indicator.id = FOCUS_INDICATOR_ID;
-    indicator.style.position = 'absolute';
-    indicator.style.top = '10px';
-    indicator.style.right = '10px';
-    indicator.style.width = '150px';
-    indicator.style.height = '30px';
+    indicator.className = 'focus-indicator';
     indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
     indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
-    indicator.style.borderRadius = '5px';
-    indicator.style.display = 'flex';
-    indicator.style.alignItems = 'center';
-    indicator.style.justifyContent = 'center';
-    indicator.style.color = 'white';
-    indicator.style.fontWeight = 'bold';
-    indicator.style.zIndex = '1000';
     indicator.textContent = 'Node Focus';
     
     document.body.appendChild(indicator);
