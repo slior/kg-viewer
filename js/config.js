@@ -138,7 +138,5 @@ export function getNodeColor(nodeType) {
         return config.visualization.nodeColors['default'];
     }
     let ret = getColorForType(nodeType);
-    console.log("getNodeColor", nodeType, ret);
     return ret;
-    // return getColorForType(nodeType);
 }

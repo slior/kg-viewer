@@ -64,6 +64,13 @@
       "insights": []
     },
     {
+      "id": "js/nodeFocusManager.js",
+      "name": "nodeFocusManager.js",
+      "type": "file/js",
+      "description": "Manages node focus state and functionality in the graph",
+      "insights": []
+    },
+    {
       "id": "css/style.css",
       "name": "style.css",
       "type": "file/css",
@@ -141,6 +148,13 @@
       "insights": []
     },
     {
+      "id": "docs/features/node_focus.md",
+      "name": "node_focus.md",
+      "type": "file/md",
+      "description": "Documentation for node focus feature",
+      "insights": []
+    },
+    {
       "id": "README.md",
       "name": "README.md",
       "type": "file/md",
@@ -195,6 +209,13 @@
       "type": "feature",
       "description": "Feature for selecting different data sets to visualize",
       "insights": ["docs/features/data_selection.md"]
+    },
+    {
+      "id": "feature_node_focus",
+      "name": "Node Focus Feature",
+      "type": "feature",
+      "description": "Feature for focusing on specific nodes in the graph",
+      "insights": ["docs/features/node_focus.md"]
     }
   ],
   "links": [
@@ -239,6 +260,11 @@
       "label": "imports"
     },
     {
+      "source": "js/graphVisualization.js",
+      "target": "js/nodeFocusManager.js",
+      "label": "imports"
+    },
+    {
       "source": "js/uiManager.js",
       "target": "js/config.js",
       "label": "imports"
@@ -259,6 +285,11 @@
       "label": "imports"
     },
     {
+      "source": "js/uiManager.js",
+      "target": "js/nodeFocusManager.js",
+      "label": "imports"
+    },
+    {
       "source": "js/filterManager.js",
       "target": "js/config.js",
       "label": "imports"
@@ -270,6 +301,11 @@
     },
     {
       "source": "js/labelManager.js",
+      "target": "js/config.js",
+      "label": "imports"
+    },
+    {
+      "source": "js/nodeFocusManager.js",
       "target": "js/config.js",
       "label": "imports"
     },
@@ -381,6 +417,31 @@
     {
       "source": "feature_data_selection",
       "target": "js/uiManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_focus",
+      "target": "js/nodeFocusManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_focus",
+      "target": "js/config.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_focus",
+      "target": "js/graphVisualization.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_focus",
+      "target": "js/uiManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_focus",
+      "target": "css/style.css",
       "label": "changed"
     }
   ]
