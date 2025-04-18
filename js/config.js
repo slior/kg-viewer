@@ -14,6 +14,17 @@ const GRAPH_CONSTANTS = {
     LABEL_DISTANCE: 150
 };
 
+// Focus mode constants
+const FOCUS_CONSTANTS = {
+    FOCUSED_NODE_COLOR: 0xdddddd, 
+    NEIGHBOR_NODE_BORDER_COLOR: 0xbbbbbb, 
+    INCOMING_LINK_COLOR: 0x00ff00, // Green
+    OUTGOING_LINK_COLOR: 0xff0000, // Red
+    DIMMED_NODE_OPACITY: 0.2,
+    FOCUS_INDICATOR_COLOR: 'rgba(255, 255, 255, 0.2)',
+    FOCUS_INDICATOR_BORDER_COLOR: 'rgba(255, 255, 255, 0.5)'
+};
+
 // Force simulation constants
 const FORCE_CONSTANTS = {
     CHARGE_STRENGTH: -50,
@@ -111,7 +122,8 @@ export const config = {
         storageKey: 'kg-viewer-labels', // localStorage key for label visibility state
         defaultNodeLabelsVisible: true, // Default visibility for node labels
         defaultLinkLabelsVisible: true // Default visibility for link labels
-    }
+    },
+    focus: FOCUS_CONSTANTS
 };
 
 /**

@@ -2,6 +2,7 @@
 import { config, getNodeColor } from './config.js';
 import { filterManager } from './filterManager.js';
 import { labelManager } from './labelManager.js';
+import { nodeFocusManager } from './nodeFocusManager.js'; // Import node focus manager
 
 // Error message constants
 const ERRORS = {
@@ -95,9 +96,49 @@ export function initUIManager(graphData, reloadGraph, loadData) {
         }
     });
 
+    // Add keyboard event listener for Escape key
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Add click event listener for clicking outside the graph
+    document.addEventListener('click', handleDocumentClick);
+
     console.log(LOG_MESSAGES.INITIALIZED);
 }
 
+/**
+ * Handles keyboard events
+ * @param {KeyboardEvent} event - The keyboard event
+ */
+function handleKeyDown(event) {
+    // Check if Escape key is pressed and focus mode is active
+    console.log("handleKeyDown", event.key, nodeFocusManager.isFocusModeActive);
+    if ((event.key === 'Escape') && nodeFocusManager.isFocusModeActive) {
+        // Exit focus mode
+        nodeFocusManager.exitFocusMode();
+        
+        // Notify graph visualization to remove focus mode styling
+        // This is done by dispatching a custom event
+        const exitFocusEvent = new CustomEvent('exitFocusMode');
+        document.dispatchEvent(exitFocusEvent);
+    }
+}
+
+/**
+ * Handles document click events
+ * @param {MouseEvent} event - The click event
+ */
+function handleDocumentClick(event) {
+    // Check if click is outside the graph container and focus mode is active
+    const graphContainer = document.getElementById('graph-container');
+    if (graphContainer && !graphContainer.contains(event.target) && nodeFocusManager.isFocusModeActive) {
+        // Exit focus mode
+        nodeFocusManager.exitFocusMode();
+        
+        // Notify graph visualization to remove focus mode styling
+        const exitFocusEvent = new CustomEvent('exitFocusMode');
+        document.dispatchEvent(exitFocusEvent);
+    }
+}
 
 export function showLoadingIndicator(message = "Loading...") {
     if (!loadingOverlay) {
@@ -362,7 +403,7 @@ function nodeInfoItemContent(item)
     htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
     let hasOtherProps = false;
     for (const key in item) {
-        if (Object.hasOwnProperty.call(item, key) && !['id', 'name', 'type', 'insights', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__threeObj'].includes(key)) {
+        if (Object.hasOwnProperty.call(item, key) && !['id', 'name', 'type', 'insights', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__threeObj', '__borderMesh'].includes(key)) {
             htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
             hasOtherProps = true;
         }
@@ -386,7 +427,7 @@ function linkInfoItemContent(item)
     htmlContent += `<p><strong>Other Properties:</strong></p><ul>`;
     let hasOtherProps = false;
     for (const key in item) {
-         if (Object.hasOwnProperty.call(item, key) && !['source', 'target', 'label', 'index', '__lineObj', '__arrowObj', '__particlesObj','__curve'].includes(key)) {
+         if (Object.hasOwnProperty.call(item, key) && !['source', 'target', 'label', 'index', '__lineObj', '__arrowObj', '__particlesObj','__curve', '__borderMesh'].includes(key)) {
             htmlContent += `<li><strong>${key}:</strong> ${JSON.stringify(item[key])}</li>`;
             hasOtherProps = true;
         }
@@ -411,6 +452,11 @@ export function updateInfoPanel(item, itemType) {
     }
 
     let htmlContent = '';
+
+    // Add focus mode indicator if active
+    if (nodeFocusManager.isFocusModeActive && itemType === 'node') {
+        htmlContent += '<div class="focus-mode-indicator">Node Focus Active</div>';
+    }
 
     switch (itemType) {
         case 'node':
