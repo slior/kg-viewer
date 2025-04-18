@@ -131,46 +131,45 @@ export function initGraphVisualization() {
           .linkCurvature(0.25)
           .linkOpacity(config.graph.linkOpacity)
           .nodeVal(config.graph.nodeSize)
-        .nodeColor(node => determineNodeColor(node));
+          .nodeColor(node => determineNodeColor(node));
           
         // Configure d3 forces separately to avoid method chaining issues
         graph.d3Force('charge').strength(config.forceGraph.chargeStrength);
         graph.d3Force('link').distance(config.forceGraph.linkDistance);
         
-        // Set up event handlers
         graph.onNodeClick(handleNodeClick);
         graph.onLinkClick(handleLinkClick);
 
-        // Add filter state change listener
         filterManager.addListener(handleFilterStateChange);
-
-        // Add label state change listener
         labelManager.addListener(handleLabelStateChange);
+        document.addEventListener('exitFocusMode', () => { removeFocusMode(); });
+
     } catch (error) {
         console.error(ERRORS.INIT_ERROR, error);
         return;
     }
-
-    // Handle window resize
     window.addEventListener('resize', onWindowResize, false);
-
-    // Add event listener for exiting focus mode
-    document.addEventListener('exitFocusMode', () => {
-            removeFocusMode();
-    });
-
-    // Start animation loop
-    animate();
+    animate(); // Start animation loop
 
     console.log(LOG_MESSAGES.INITIALIZED);
 }
 
+/**
+ * Checks if a link should be highlighted
+ * @param {Object} link - The link to check
+ * @returns {boolean} True if the link should be highlighted, false otherwise
+ */
 function isHighlightedLink(link)
 {
     const connectionType = nodeFocusManager.getLinkConnectionType(link);
     return connectionType.isConnected;
 }
 
+/**
+ * Determines the color of a node based on its type and focus state
+ * @param {Object} node - The node to determine color for
+ * @returns {string} The color to use for the node
+ */
 function determineNodeColor(node)
 {
     if (!nodeFocusManager.isFocusModeActive)
@@ -285,18 +284,12 @@ function handleNodeClick(node, event) {
     const isCtrlPressed = event.ctrlKey || event.metaKey;
     
     if (isCtrlPressed) {
-        // Enter focus mode
         nodeFocusManager.enterFocusMode(node, graphData);
         applyFocusMode();
-    } else {
-        // Regular click - exit focus mode if active
-        if (nodeFocusManager.isFocusModeActive) {
-            nodeFocusManager.exitFocusMode();
-            removeFocusMode();
-        }
-    }
+
+    } 
+    else exitFocusModeIfActive(); // Regular click - exit focus mode if active
     
-    // Display node info in the UI panel
     updateInfoPanel(node, 'node');
 }
 
@@ -307,15 +300,17 @@ function handleNodeClick(node, event) {
  */
 function handleLinkClick(link, event) {
     console.log(LOG_MESSAGES.LINK_CLICKED, link);
+    exitFocusModeIfActive();
     
-    // Exit focus mode if active
+    updateInfoPanel(link, 'link');
+}
+
+function exitFocusModeIfActive()
+{
     if (nodeFocusManager.isFocusModeActive) {
         nodeFocusManager.exitFocusMode();
         removeFocusMode();
     }
-    
-    // Display link info in the UI panel
-    updateInfoPanel(link, 'link');
 }
 
 /**
@@ -350,7 +345,11 @@ function applyFilterState(filterState) {
     graph.graphData(graphData);
 }
 
-// Update link visibility based on connected nodes
+/**
+ * Updates the visibility of a link based on the filter state of its connected nodes
+ * @param {Object} link - The link object to update
+ * @param {Object} filterState - The current filter state mapping node types to visibility
+ */
 function updateLinkVisibility(link, filterState)
 { 
     const sourceType = link.source.type || 'default';
@@ -362,6 +361,7 @@ function updateLinkVisibility(link, filterState)
     if (link.__arrowObj) link.__arrowObj.visible = isVisible;
     if (link.__particlesObj) link.__particlesObj.visible = isVisible;
 }
+
 /**
  * Handles label state changes
  * @param {Object} labelState - The new label state
@@ -443,7 +443,6 @@ function applyFocusMode() {
     if (!graph || !graphData || !graphData.nodes) return;
     
     console.log("Applying focus mode");
-    console.log(" - Focused node:", nodeFocusManager.focusedNode);
    
     graph.refresh();
     addFocusIndicator();
@@ -453,24 +452,27 @@ function applyFocusMode() {
  * Removes focus mode styling from the graph
  */
 function removeFocusMode() {
-    console.log("removeFocusMode");
-    if (!graph || !graphData || !graphData.nodes) return;
     
+    if (!graph || !graphData || !graphData.nodes) return;
+
+    console.log("Removing focus mode");
     graph.refresh();
-    // Remove focus indicator
+    
     removeFocusIndicator();
 }
+
+const FOCUS_INDICATOR_ID = 'focus-indicator';
 
 /**
  * Adds a focus indicator to the viewport
  */
 function addFocusIndicator() {
     // Check if indicator already exists
-    if (document.getElementById('focus-indicator')) return;
+    if (document.getElementById(FOCUS_INDICATOR_ID)) return;
     
     // Create focus indicator
     const indicator = document.createElement('div');
-    indicator.id = 'focus-indicator';
+    indicator.id = FOCUS_INDICATOR_ID;
     indicator.style.position = 'absolute';
     indicator.style.top = '10px';
     indicator.style.right = '10px';
@@ -487,7 +489,6 @@ function addFocusIndicator() {
     indicator.style.zIndex = '1000';
     indicator.textContent = 'Node Focus';
     
-    // Add to document
     document.body.appendChild(indicator);
 }
 
@@ -496,7 +497,7 @@ function addFocusIndicator() {
  */
 function removeFocusIndicator() {
     console.log("removeFocusIndicator");
-    const indicator = document.getElementById('focus-indicator');
+    const indicator = document.getElementById(FOCUS_INDICATOR_ID);
     if (indicator) {
         indicator.remove();
     }
