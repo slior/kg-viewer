@@ -216,6 +216,13 @@
       "type": "feature",
       "description": "Feature for focusing on specific nodes in the graph",
       "insights": ["docs/features/node_focus.md"]
+    },
+    {
+      "id": "feature_node_context_mode",
+      "name": "Node Context Mode Feature",
+      "type": "feature",
+      "description": "Feature for focusing on a node and showing only its context (neighbors and 2-hop neighbors)",
+      "insights": ["docs/features/node_context_mode.md"]
     }
   ],
   "links": [
@@ -442,6 +449,26 @@
     {
       "source": "feature_node_focus",
       "target": "css/style.css",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_context_mode",
+      "target": "js/config.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_context_mode",
+      "target": "js/nodeFocusManager.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_context_mode",
+      "target": "js/graphVisualization.js",
+      "label": "changed"
+    },
+    {
+      "source": "feature_node_context_mode",
+      "target": "js/uiManager.js",
       "label": "changed"
     }
   ]
