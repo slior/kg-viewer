@@ -106,42 +106,52 @@ export function initUIManager(graphData, reloadGraph, loadData) {
 }
 
 /**
- * Handles keyboard events
+ * Handles keyboard events, checking for Escape key to exit focus/context mode.
  * @param {KeyboardEvent} event - The keyboard event
  */
 function handleKeyDown(event) {
-    // Check if Escape key is pressed and focus mode is active
-    console.log("handleKeyDown", event.key, nodeFocusManager.isFocusModeActive);
-    if ((event.key === 'Escape') && nodeFocusManager.isFocusModeActive) {
-        // Exit focus mode
-        nodeFocusManager.exitFocusMode();
+    // Check if Escape key is pressed and either focus or context mode is active
+    if (event.key === 'Escape' && (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive)) {
+        console.log("Escape pressed, exiting active mode");
         
-        // Notify graph visualization to remove focus mode styling
-        // This is done by dispatching a custom event
-        const exitFocusEvent = new CustomEvent('exitFocusMode');
-        document.dispatchEvent(exitFocusEvent);
+        // Exit the current mode (handles resetting flags in the manager)
+        nodeFocusManager.exitFocusMode(); 
         
-        // Update the info panel to remove the focus mode indicator
+        // Notify graph visualization to remove mode styling (refresh graph, update indicator)
+        const exitModeEvent = new CustomEvent('exitFocusMode'); // Reuse existing event name
+        document.dispatchEvent(exitModeEvent);
+        
+        // Update the info panel to remove any node details and the mode indicator text
         if (infoContent) {
-            updateInfoPanel(null, 'node');
+            updateInfoPanel(null, 'node'); // Clear panel
         }
     }
 }
 
 /**
- * Handles document click events
+ * Handles document click events, exiting focus/context mode if click is outside the graph container.
  * @param {MouseEvent} event - The click event
  */
 function handleDocumentClick(event) {
-    // Check if click is outside the graph container and focus mode is active
-    const graphContainer = document.getElementById('graph-container');
-    if (graphContainer && !graphContainer.contains(event.target) && nodeFocusManager.isFocusModeActive) {
-        // Exit focus mode
+    // Check if click is outside the graph container and either mode is active
+    const graphContainer = document.getElementById(config.ui.graphContainerId);
+    if (graphContainer && 
+        !graphContainer.contains(event.target) && 
+        (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive)) {
+        
+        console.log("Clicked outside graph, exiting active mode");
+        
+        // Exit the current mode
         nodeFocusManager.exitFocusMode();
         
-        // Notify graph visualization to remove focus mode styling
-        const exitFocusEvent = new CustomEvent('exitFocusMode');
-        document.dispatchEvent(exitFocusEvent);
+        // Notify graph visualization to remove mode styling
+        const exitModeEvent = new CustomEvent('exitFocusMode');
+        document.dispatchEvent(exitModeEvent);
+        
+        // Optionally clear the info panel as well
+        if (infoContent) {
+            updateInfoPanel(null, 'node');
+        }
     }
 }
 
@@ -445,33 +455,54 @@ function linkInfoItemContent(item)
 }
 
 /**
- * Updates the info panel with details of the selected item
- * @param {Object} item - The selected item (node or link)
- * @param {string} itemType - The type of item ('node' or 'link')
+ * Updates the info panel with details of the selected item and current mode.
+ * @param {Object|null} item - The selected item (node or link) or null to clear.
+ * @param {string} itemType - The type of item ('node' or 'link').
  */
 export function updateInfoPanel(item, itemType) {
     const NO_SELECTION_MESSAGE = 'Select a node or edge to see details.';   
-    if (!infoContent || !item) {
-        infoContent.innerHTML = NO_SELECTION_MESSAGE;
+    if (!infoContent) {
+        console.error("Info panel content element not found.");
         return;
     }
 
     let htmlContent = '';
 
-    // Add focus mode indicator if active
-    if (nodeFocusManager.isFocusModeActive && itemType === 'node') {
-        htmlContent += '<div class="focus-mode-indicator">Node Focus Active</div>';
+    // Add mode indicator if active and a node is selected
+    if (itemType === 'node' && item) { // Only show indicator when a node is selected
+        if (nodeFocusManager.isContextModeActive) {
+            // Use configured text for context mode
+            htmlContent += `<div class="focus-mode-indicator">${config.focus.CONTEXT_MODE_INDICATOR_TEXT} Active</div>`;
+        } else if (nodeFocusManager.isFocusModeActive) {
+            htmlContent += '<div class="focus-mode-indicator">Node Focus Active</div>';
+        }
     }
 
-    switch (itemType) {
-        case 'node':
-            htmlContent += nodeInfoItemContent(item);
-            break;
-        case 'link':
-            htmlContent += linkInfoItemContent(item);
-            break;
-        default:
-            htmlContent = NO_SELECTION_MESSAGE;
+    // Add item details if an item is provided
+    if (item) {
+        switch (itemType) {
+            case 'node':
+                htmlContent += nodeInfoItemContent(item);
+                break;
+            case 'link':
+                // Ensure link mode indicator is not shown (only relevant for node selection)
+                 if (nodeFocusManager.isContextModeActive || nodeFocusManager.isFocusModeActive) {
+                    htmlContent += '<div class="focus-mode-indicator-info">Focus/Context mode active. Select a node for details.</div>';
+                 }
+                htmlContent += linkInfoItemContent(item);
+                break;
+            default:
+                 // If item exists but type is unknown, show generic message
+                 htmlContent += '<p>Selected item details unavailable.</p>'; 
+                 break;
+        }
+    } else {
+        // No item selected, clear the panel
+        htmlContent = NO_SELECTION_MESSAGE;
+         // Ensure mode indicator is also cleared if panel is cleared
+        if (nodeFocusManager.isContextModeActive || nodeFocusManager.isFocusModeActive) {
+           htmlContent += '<br><div class="focus-mode-indicator-info">Focus/Context mode active.</div>';
+        }
     }
 
     infoContent.innerHTML = htmlContent;

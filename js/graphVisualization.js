@@ -55,6 +55,11 @@ let graphData = {};
 /** @type {HTMLElement} The container element for the graph */
 const graphContainer = document.getElementById(config.ui.graphContainerId);
 
+// Constants for mode types
+const FOCUS_MODE = 'focus';
+const CONTEXT_MODE = 'context';
+const NO_MODE = 'none';
+
 /**
  * Initializes the 3D graph visualization
  * Sets up Three.js scene, camera, renderer, and ForceGraph3D
@@ -125,13 +130,16 @@ export function initGraphVisualization() {
           .linkDirectionalArrowLength(config.graph.arrowLength)
           .linkDirectionalArrowRelPos(1.03)
           .linkDirectionalArrowColor(config.graph.arrowColor)
-          .linkDirectionalParticles(link => isHighlightedLink(link) ? 2 : 0) //"intensity" of particles
+          .linkDirectionalParticles(link => determineLinkParticles(link))
           .linkDirectionalParticleWidth(2) //"width" of particles
           .linkWidth(config.graph.linkWidth)
           .linkCurvature(0.25)
           .linkOpacity(config.graph.linkOpacity)
           .nodeVal(config.graph.nodeSize)
-          .nodeColor(node => determineNodeColor(node));
+          .nodeColor(node => determineNodeColor(node))
+          .nodeVisibility(node => determineNodeVisibility(node))
+          .linkVisibility(link => determineLinkVisibility(link))
+          .linkColor(link => determineLinkColor(link));
           
         // Configure d3 forces separately to avoid method chaining issues
         graph.d3Force('charge').strength(config.forceGraph.chargeStrength);
@@ -142,7 +150,7 @@ export function initGraphVisualization() {
 
         filterManager.addListener(handleFilterStateChange);
         labelManager.addListener(handleLabelStateChange);
-        document.addEventListener('exitFocusMode', () => { removeFocusMode(); });
+        document.addEventListener('exitFocusMode', () => { exitActiveMode(); });
 
     } catch (error) {
         console.error(ERRORS.INIT_ERROR, error);
@@ -155,38 +163,110 @@ export function initGraphVisualization() {
 }
 
 /**
- * Checks if a link should be highlighted
- * @param {Object} link - The link to check
- * @returns {boolean} True if the link should be highlighted, false otherwise
+ * Determines if a node should be visible based on the current mode.
+ * @param {Object} node - The node to check.
+ * @returns {boolean} True if the node should be visible.
  */
-function isHighlightedLink(link)
-{
-    const connectionType = nodeFocusManager.getLinkConnectionType(link);
-    return connectionType.isConnected;
+function determineNodeVisibility(node) {
+    if (nodeFocusManager.isContextModeActive) {
+        // In context mode, only show focused, neighbor, and two-hop nodes
+        return nodeFocusManager.isFocusedNode(node) || 
+               nodeFocusManager.isNeighborNode(node) || 
+               nodeFocusManager.isTwoHopNeighborNode(node);
+    } else {
+        // In focus mode or no mode, all nodes are potentially visible (subject to filters)
+        return true; 
+    }
 }
 
 /**
- * Determines the color of a node based on its type and focus state
- * @param {Object} node - The node to determine color for
- * @returns {string} The color to use for the node
+ * Determines if a link should be visible based on the current mode.
+ * @param {Object} link - The link to check.
+ * @returns {boolean} True if the link should be visible.
+ */
+function determineLinkVisibility(link) {
+    if (nodeFocusManager.isContextModeActive) {
+        // In context mode, only show links connected to the focused node
+        return nodeFocusManager.getLinkConnectionType(link).isConnected;
+    } else {
+        // In focus mode or no mode, all links are potentially visible (subject to filters)
+        return true;
+    }
+}
+
+/**
+ * Determines the color of a link based on the current mode.
+ * @param {Object} link - The link to determine color for.
+ * @returns {number|string} The color to use for the link.
+ */
+function determineLinkColor(link) {
+    if (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive) {
+        if (nodeFocusManager.isFocusedNode(link.source)) { // Outgoing link
+            return config.focus.OUTGOING_LINK_COLOR;
+        } else if (nodeFocusManager.isFocusedNode(link.target)) { // Incoming link
+            return config.focus.INCOMING_LINK_COLOR;
+        } else {
+            // Link connecting two neighbors (possible in context mode) - keep default
+            // Fallback to default color if link is visible but not directly connected to focused node
+            return config.graph.arrowColor; // Or another suitable default link color
+        }
+    } else {
+        // Default link color when no mode is active
+        return config.graph.arrowColor; // Default color from config
+    }
+}
+
+/**
+ * Determines the number of particles for a link based on the current mode.
+ * @param {Object} link - The link to check.
+ * @returns {number} The number of particles (e.g., 2 for highlighted, 0 otherwise).
+ */
+function determineLinkParticles(link) {
+    const isConnected = nodeFocusManager.getLinkConnectionType(link).isConnected;
+    // Show particles if either mode is active AND the link is connected to the focused node
+    return (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive) && isConnected ? 2 : 0;
+}
+
+/**
+ * Determines the color of a node based on its type and the current mode (focus or context).
+ * @param {Object} node - The node to determine color for.
+ * @returns {number|string} The color to use for the node.
  */
 function determineNodeColor(node)
 {
-    if (!nodeFocusManager.isFocusModeActive)
-    {
-        return getNodeColor(node.type);
+    if (nodeFocusManager.isContextModeActive) {
+        if (nodeFocusManager.isFocusedNode(node)) {
+            return config.focus.FOCUSED_NODE_COLOR;
+        }
+        else if (nodeFocusManager.isNeighborNode(node)) {
+            return config.focus.NEIGHBOR_NODE_COLOR;
+        }
+        else if (nodeFocusManager.isTwoHopNeighborNode(node)) {
+            // Dim two-hop neighbors in context mode
+            return config.focus.DIMMED_NODE_COLOR; 
+        }
+        else {
+             // Should not happen if visibility is correct, but return default/dimmed as fallback
+             return config.focus.DIMMED_NODE_COLOR;
+        }
     }
-    else if (nodeFocusManager.isFocusedNode(node))
+    else if (nodeFocusManager.isFocusModeActive)
     {
-        return config.focus.FOCUSED_NODE_COLOR;
-    }
-    else if (nodeFocusManager.isNeighborNode(node))
-    {
-        return config.focus.NEIGHBOR_NODE_COLOR;
+        // Existing focus mode logic
+        if (nodeFocusManager.isFocusedNode(node)) {
+            return config.focus.FOCUSED_NODE_COLOR;
+        }
+        else if (nodeFocusManager.isNeighborNode(node)) {
+            return config.focus.NEIGHBOR_NODE_COLOR;
+        }
+        else {
+            return config.focus.DIMMED_NODE_COLOR;
+        }
     }
     else
     {
-        return config.focus.DIMMED_NODE_COLOR;
+        // Default node color when no mode is active
+        return getNodeColor(node.type);
     }
 }
 
@@ -249,7 +329,7 @@ export async function loadDataAndRender(data) {
         // Exit focus mode when loading new data
         if (nodeFocusManager.isFocusModeActive) {
             nodeFocusManager.exitFocusMode();
-            removeFocusMode();
+            exitActiveMode();
         }
         
         graph.graphData(graphData); // Feed data to the force-graph
@@ -273,43 +353,56 @@ export async function loadDataAndRender(data) {
 }
 
 /**
- * Handles node click events
- * @param {Object} node - The clicked node
- * @param {Event} event - The click event
+ * Handles node click events, entering focus or context mode based on modifier keys.
+ * @param {Object} node - The clicked node.
+ * @param {Event} event - The click event.
  */
 function handleNodeClick(node, event) {
     console.log(LOG_MESSAGES.NODE_CLICKED, node);
     
-    // Check if Ctrl/Cmd key is pressed for focus mode
-    const isCtrlPressed = event.ctrlKey || event.metaKey;
+    const isAltPressed = event.altKey;       // Alt/Option key for Context Mode
+    const isCtrlPressed = event.ctrlKey || event.metaKey; // Ctrl/Cmd key for Focus Mode
     
-    if (isCtrlPressed) {
-        nodeFocusManager.enterFocusMode(node, graphData);
-        applyFocusMode();
-
+    if (isAltPressed) {
+        console.log("Entering Context Mode");
+        nodeFocusManager.enterFocusMode(node, graphData, CONTEXT_MODE);
+        applyModeStyles();
     } 
-    else exitFocusModeIfActive(); // Regular click - exit focus mode if active
+    else if (isCtrlPressed) {
+        console.log("Entering Focus Mode");
+        nodeFocusManager.enterFocusMode(node, graphData, FOCUS_MODE);
+        applyModeStyles();
+    } 
+    else {
+         // Regular click - exit any active mode
+        exitActiveMode(); 
+    }
     
+    // Always update info panel regardless of mode change
     updateInfoPanel(node, 'node');
 }
 
 /**
- * Handles link click events
- * @param {Object} link - The clicked link
- * @param {Event} event - The click event
+ * Handles link click events.
+ * Exits any active mode and updates the info panel.
+ * @param {Object} link - The clicked link.
+ * @param {Event} event - The click event.
  */
 function handleLinkClick(link, event) {
     console.log(LOG_MESSAGES.LINK_CLICKED, link);
-    exitFocusModeIfActive();
+    exitActiveMode(); // Exit focus/context mode on link click
     
     updateInfoPanel(link, 'link');
 }
 
-function exitFocusModeIfActive()
-{
-    if (nodeFocusManager.isFocusModeActive) {
-        nodeFocusManager.exitFocusMode();
-        removeFocusMode();
+/**
+ * Exits the currently active focus or context mode, if any.
+ */
+function exitActiveMode() {
+    if (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive) {
+        console.log("Exiting active mode (Focus or Context)");
+        nodeFocusManager.exitFocusMode(); // Resets both flags
+        removeModeStyles(); // Apply removal styling (refresh graph, remove indicator)
     }
 }
 
@@ -437,57 +530,74 @@ function onWindowResize() {
 }
 
 /**
- * Applies focus mode styling to the graph
+ * Applies the visual styles for the current active mode (Focus or Context).
+ * Refreshes the graph and updates the mode indicator.
  */
-function applyFocusMode() {
+function applyModeStyles() { 
     if (!graph || !graphData || !graphData.nodes) return;
     
-    console.log("Applying focus mode");
+    console.log("Applying mode styles (Focus or Context)");
    
-    graph.refresh();
-    addFocusIndicator();
+    // Refresh graph to apply new visibility, color, particle settings
+    graph.refresh(); 
+    
+    // Update the visual indicator (text and visibility)
+    updateModeIndicator(); 
 }
 
 /**
- * Removes focus mode styling from the graph
+ * Removes the visual styles associated with Focus or Context mode.
+ * Refreshes the graph and updates (removes) the mode indicator.
  */
-function removeFocusMode() {
-    
+function removeModeStyles() { 
     if (!graph || !graphData || !graphData.nodes) return;
 
-    console.log("Removing focus mode");
-    graph.refresh();
+    console.log("Removing mode styles (Focus or Context)");
     
-    removeFocusIndicator();
+    // Refresh graph to revert to default visibility, color, etc.
+    graph.refresh(); 
+    
+    // Update the visual indicator (remove it)
+    updateModeIndicator(); 
 }
 
 const FOCUS_INDICATOR_ID = 'focus-indicator';
 
 /**
- * Adds a focus indicator to the viewport
+ * Adds, updates, or removes the mode indicator element in the DOM based on the current state.
  */
-function addFocusIndicator() {
-    // Check if indicator already exists
-    if (document.getElementById(FOCUS_INDICATOR_ID)) return;
-    
-    // Create focus indicator
-    const indicator = document.createElement('div');
-    indicator.id = FOCUS_INDICATOR_ID;
-    indicator.className = 'focus-indicator';
-    indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
-    indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
-    indicator.textContent = 'Node Focus';
-    
-    document.body.appendChild(indicator);
-}
+function updateModeIndicator() {
+    let indicator = document.getElementById(FOCUS_INDICATOR_ID);
 
-/**
- * Removes the focus indicator from the viewport
- */
-function removeFocusIndicator() {
-    console.log("removeFocusIndicator");
-    const indicator = document.getElementById(FOCUS_INDICATOR_ID);
-    if (indicator) {
-        indicator.remove();
+    if (nodeFocusManager.isContextModeActive) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = FOCUS_INDICATOR_ID;
+            indicator.className = 'focus-indicator'; // Reuse existing class
+            indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
+            indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
+            document.body.appendChild(indicator);
+        }
+        indicator.textContent = config.focus.CONTEXT_MODE_INDICATOR_TEXT;
+        indicator.style.display = 'block'; // Make sure it's visible
+
+    } else if (nodeFocusManager.isFocusModeActive) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = FOCUS_INDICATOR_ID;
+            indicator.className = 'focus-indicator';
+            indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
+            indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
+            document.body.appendChild(indicator);
+        }
+        indicator.textContent = 'Node Focus'; // Standard focus text
+        indicator.style.display = 'block'; // Make sure it's visible
+
+    } else {
+        // Neither mode is active, remove or hide the indicator
+        if (indicator) {
+            indicator.style.display = 'none'; // Hide instead of removing, potentially slightly faster
+            // Alternatively, remove it: indicator.parentNode.removeChild(indicator);
+        }
     }
 }
