@@ -202,3 +202,6 @@ Implement the ability to focus on a node, and show only its context nodes and li
     *   Verified each item in the implementation checklist against the code changes.
     *   Confirmed adherence to basic cleanup guidelines (comments, literals, duplication, function structure).
     *   Result: Implementation matches the plan exactly.
+*   **Bug Fix 1 (Exit Mode Styling):**
+    *   **Bug:** When exiting modes via the Escape key, the `handleKeyDown` function (`uiManager.js`) reset the state flags in `nodeFocusManager` *before* the `exitFocusMode` event triggered `exitActiveMode` (`graphVisualization.js`). The check `if (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive)` inside `exitActiveMode` then incorrectly evaluated to false, preventing `removeModeStyles()` from running and leaving the graph styled incorrectly.
+    *   **Fix:** Removed the conditional check `if (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive)` from `exitActiveMode` to ensure `removeModeStyles()` is always called when the function is invoked, correctly resetting graph visuals.

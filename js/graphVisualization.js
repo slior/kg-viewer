@@ -399,11 +399,8 @@ function handleLinkClick(link, event) {
  * Exits the currently active focus or context mode, if any.
  */
 function exitActiveMode() {
-    if (nodeFocusManager.isFocusModeActive || nodeFocusManager.isContextModeActive) {
-        console.log("Exiting active mode (Focus or Context)");
-        nodeFocusManager.exitFocusMode(); // Resets both flags
-        removeModeStyles(); // Apply removal styling (refresh graph, remove indicator)
-    }
+    nodeFocusManager.exitFocusMode(); // Resets both flags
+    removeModeStyles(); // Apply removal styling (refresh graph, remove indicator)
 }
 
 /**
