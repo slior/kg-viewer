@@ -53,7 +53,7 @@ const CAMERA_CONSTANTS = {
 const API_CONSTANTS = {
     BASE_URL: 'http://localhost:8000',
     ENDPOINT: '/data',
-    DEFAULT_DATA_SET: 'sample.json',
+    DEFAULT_DATA_SET: 'kg.json',
     TIMEOUT: 10000,
     RETRY_COUNT: 3
 };
