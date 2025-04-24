@@ -560,6 +560,18 @@ function removeModeStyles() {
 
 const FOCUS_INDICATOR_ID = 'focus-indicator';
 
+
+function createAndAppendModeIndicator() {
+    let indicator = document.createElement('div');
+    indicator.id = FOCUS_INDICATOR_ID;
+    indicator.className = 'focus-indicator'; // Reuse existing class
+    indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
+    indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
+    indicator.style.justifyContent = 'center';
+    document.body.appendChild(indicator);
+    return indicator;
+}
+
 /**
  * Adds, updates, or removes the mode indicator element in the DOM based on the current state.
  */
@@ -568,26 +580,16 @@ function updateModeIndicator() {
 
     if (nodeFocusManager.isContextModeActive) {
         if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = FOCUS_INDICATOR_ID;
-            indicator.className = 'focus-indicator'; // Reuse existing class
-            indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
-            indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
-            document.body.appendChild(indicator);
+            indicator = createAndAppendModeIndicator();
         }
         indicator.textContent = config.focus.CONTEXT_MODE_INDICATOR_TEXT;
         indicator.style.display = 'block'; // Make sure it's visible
 
     } else if (nodeFocusManager.isFocusModeActive) {
         if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = FOCUS_INDICATOR_ID;
-            indicator.className = 'focus-indicator';
-            indicator.style.backgroundColor = config.focus.FOCUS_INDICATOR_COLOR;
-            indicator.style.border = `1px solid ${config.focus.FOCUS_INDICATOR_BORDER_COLOR}`;
-            document.body.appendChild(indicator);
+            indicator = createAndAppendModeIndicator();
         }
-        indicator.textContent = 'Node Focus'; // Standard focus text
+        indicator.textContent = config.focus.FOCUS_MODE_INDICATOR_TEXT;
         indicator.style.display = 'block'; // Make sure it's visible
 
     } else {

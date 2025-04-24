@@ -22,6 +22,9 @@ const LOG_MESSAGES = {
     LEGEND_GENERATED: 'Legend generated.'
 };
 
+const ITEM_TYPE_NODE = 'node';
+const ITEM_TYPE_LINK = 'link';
+
 // UI element references
 
 /** @type {HTMLElement} The legend content element */
@@ -469,33 +472,17 @@ export function updateInfoPanel(item, itemType) {
     let htmlContent = '';
 
     // Add mode indicator if active and a node is selected
-    if (itemType === 'node' && item) { // Only show indicator when a node is selected
+    if (itemType === ITEM_TYPE_NODE && item) { // Only show indicator when a node is selected
         if (nodeFocusManager.isContextModeActive) {
-            // Use configured text for context mode
             htmlContent += `<div class="focus-mode-indicator">${config.focus.CONTEXT_MODE_INDICATOR_TEXT} Active</div>`;
         } else if (nodeFocusManager.isFocusModeActive) {
-            htmlContent += '<div class="focus-mode-indicator">Node Focus Active</div>';
+            htmlContent += `<div class="focus-mode-indicator">${config.focus.FOCUS_MODE_INDICATOR_TEXT} Active</div>`;
         }
     }
 
     // Add item details if an item is provided
     if (item) {
-        switch (itemType) {
-            case 'node':
-                htmlContent += nodeInfoItemContent(item);
-                break;
-            case 'link':
-                // Ensure link mode indicator is not shown (only relevant for node selection)
-                 if (nodeFocusManager.isContextModeActive || nodeFocusManager.isFocusModeActive) {
-                    htmlContent += '<div class="focus-mode-indicator-info">Focus/Context mode active. Select a node for details.</div>';
-                 }
-                htmlContent += linkInfoItemContent(item);
-                break;
-            default:
-                 // If item exists but type is unknown, show generic message
-                 htmlContent += '<p>Selected item details unavailable.</p>'; 
-                 break;
-        }
+        htmlContent += infoPanelItemContent(item, itemType);
     } else {
         // No item selected, clear the panel
         htmlContent = NO_SELECTION_MESSAGE;
@@ -506,6 +493,28 @@ export function updateInfoPanel(item, itemType) {
     }
 
     infoContent.innerHTML = htmlContent;
+}
+
+function infoPanelItemContent(item, itemType)
+{
+    let htmlContent = '';
+    switch (itemType) {
+        case ITEM_TYPE_NODE:
+            htmlContent += nodeInfoItemContent(item);
+            break;
+        case ITEM_TYPE_LINK:
+            // Ensure link mode indicator is not shown (only relevant for node selection)
+             if (nodeFocusManager.isContextModeActive || nodeFocusManager.isFocusModeActive) {
+                htmlContent += '<div class="focus-mode-indicator-info">Focus/Context mode active. Select a node for details.</div>';
+             }
+            htmlContent += linkInfoItemContent(item);
+            break;
+        default:
+             // If item exists but type is unknown, show generic message
+             htmlContent += '<p>Selected item details unavailable.</p>'; 
+             break;
+    }
+    return htmlContent;
 }
 
 /**

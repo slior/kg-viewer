@@ -25,7 +25,8 @@ const FOCUS_CONSTANTS = {
     DIMMED_NODE_COLOR: 0x333333,
     FOCUS_INDICATOR_COLOR: 'rgba(255, 255, 255, 0.2)',
     FOCUS_INDICATOR_BORDER_COLOR: 'rgba(255, 255, 255, 0.5)',
-    CONTEXT_MODE_INDICATOR_TEXT: 'Node Context Mode'
+    CONTEXT_MODE_INDICATOR_TEXT: 'Node Context',
+    FOCUS_MODE_INDICATOR_TEXT: 'Node Focus'
 };
 
 // Force simulation constants
